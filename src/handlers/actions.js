@@ -79,6 +79,14 @@ export const handleStartResponse = async ({ ack, body, client }) => {
       channel: question.userId,
       text: `<@${mentorId}>があなたの質問に対応を開始しました。メンターチャンネルのスレッドをご確認ください。`,
     });
+
+    // フォローアップをキャンセル（メンターが対応開始したため）
+    const { getFollowUpService } = await import('../handlers/followup.js');
+    const followUpService = getFollowUpService();
+
+    if (followUpService) {
+      followUpService.cancelFollowUp(questionId);
+    }
   } catch (error) {
     console.error('Error handling start response:', error);
 
@@ -209,6 +217,14 @@ export const handleCompleteResponse = async ({ ack, body, client }) => {
       channel: question.userId,
       text: `<@${mentorId}>があなたの質問への対応を完了しました。ありがとうございました！`,
     });
+
+    // フォローアップをキャンセル（完了したため）
+    const { getFollowUpService } = await import('../handlers/followup.js');
+    const followUpService = getFollowUpService();
+
+    if (followUpService) {
+      followUpService.cancelFollowUp(questionId);
+    }
   } catch (error) {
     console.error('Error handling complete response:', error);
   }

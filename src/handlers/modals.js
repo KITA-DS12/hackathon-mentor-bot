@@ -61,6 +61,14 @@ export const handleQuestionModalSubmission = async ({ ack, body, client }) => {
       channel: body.user.id,
       text: '質問を送信しました。メンターからの返答をお待ちください。',
     });
+
+    // フォローアップを開始
+    const { getFollowUpService } = await import('./followup.js');
+    const followUpService = getFollowUpService();
+
+    if (followUpService) {
+      followUpService.scheduleFollowUp(questionId, body.user.id);
+    }
   } catch (error) {
     console.error('Error handling question modal submission:', error);
 
