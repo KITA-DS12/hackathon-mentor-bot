@@ -12,9 +12,6 @@ export const handleMentorRegistrationSubmission = async ({ ack, body, view, clie
     // フォームデータを取得
     const values = view.state.values;
     const mentorName = values.mentor_name.name.value;
-    const selectedSpecialties = values.mentor_specialties.specialties.selected_options?.map(
-      option => option.value
-    ) || [];
     const bio = values.mentor_bio?.bio?.value || '';
     const availability = values.initial_availability.availability.selected_option.value;
 
@@ -23,7 +20,6 @@ export const handleMentorRegistrationSubmission = async ({ ack, body, view, clie
       userId,
       userName,
       name: mentorName,
-      specialties: selectedSpecialties,
       bio,
       availability,
       registeredAt: new Date().toISOString(),
@@ -33,10 +29,6 @@ export const handleMentorRegistrationSubmission = async ({ ack, body, view, clie
     await firestoreService.createOrUpdateMentor(userId, mentorData);
 
     // 登録完了メッセージを送信
-    const specialtiesText = selectedSpecialties.length > 0 
-      ? selectedSpecialties.join(', ') 
-      : '未設定';
-
     const statusEmoji = availability === 'available' ? '🟢' : 
                        availability === 'busy' ? '🟡' : '🔴';
 
@@ -44,7 +36,6 @@ export const handleMentorRegistrationSubmission = async ({ ack, body, view, clie
       channel: body.user.id, // DMで通知
       text: `✅ **メンター登録が完了しました！**\n\n` +
             `👤 **名前**: ${mentorName}\n` +
-            `🎯 **専門分野**: ${specialtiesText}\n` +
             `${statusEmoji} **ステータス**: ${getStatusText(availability)}\n` +
             `${bio ? `💬 **自己紹介**: ${bio}\n` : ''}` +
             `\n質問が投稿された際にメンションを受け取ります。\n` +

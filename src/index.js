@@ -4,7 +4,6 @@ import { config } from './config/index.js';
 import {
   handleMentorHelpCommand,
   handleMentorStatusCommand,
-  handleMentorScheduleCommand,
   handleMentorRegisterCommand,
   handleMentorListCommand,
   handleMentorUnregisterCommand,
@@ -35,7 +34,6 @@ import {
   handleCompleteResponse,
 } from './handlers/actions.js';
 import {
-  handleScheduleModalSubmission,
   handleStatusModalSubmission,
   handleChangeStatusAction,
 } from './handlers/schedule.js';
@@ -74,7 +72,6 @@ const app = new App({
 // Slash Commands
 app.command('/mentor-help', handleMentorHelpCommand);
 app.command('/mentor-status', handleMentorStatusCommand);
-app.command('/mentor-schedule', handleMentorScheduleCommand);
 app.command('/mentor-register', handleMentorRegisterCommand);
 app.command('/mentor-list', handleMentorListCommand);
 app.command('/mentor-unregister', handleMentorUnregisterCommand);
@@ -82,7 +79,6 @@ app.command('/mentor-unregister', handleMentorUnregisterCommand);
 // Modal Submissions
 app.view('question_modal', handleQuestionModalSubmission);
 app.view('reservation_modal', handleReservationModalSubmission);
-app.view('schedule_modal', handleScheduleModalSubmission);
 app.view('status_modal', handleStatusModalSubmission);
 app.view('category_selection_modal', handleCategorySelectionSubmission);
 app.view('subcategory_selection_modal', handleSubcategorySelectionSubmission);

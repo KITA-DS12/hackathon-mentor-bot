@@ -29,8 +29,7 @@ export const handleConfirmUnregisterAction = async ({ ack, body, client }) => {
       ts: body.message.ts,
       text: `✅ **メンター登録を解除しました**\n\n` +
             `解除されたメンター情報:\n` +
-            `👤 **名前**: ${mentorInfo.name}\n` +
-            `🎯 **専門分野**: ${mentorInfo.specialties?.join(', ') || '未設定'}\n\n` +
+            `👤 **名前**: ${mentorInfo.name}\n\n` +
             `今後質問が投稿されてもメンションを受け取りません。\n` +
             `再度メンターとして参加したい場合は \`/mentor-register\` で登録してください。`,
     });

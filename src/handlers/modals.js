@@ -132,44 +132,19 @@ export const handleReservationModalSubmission = async ({
 // メンター向けのメンション文を生成
 async function getMentionText(category) {
   try {
-    // カテゴリに基づいて適切なメンターを取得
-    let relevantMentors = [];
+    // 全ての利用可能なメンターを取得
+    const availableMentors = await firestoreService.getAvailableMentors();
     
-    // カテゴリマッピング
-    const categoryMapping = {
-      '技術的な問題': ['フロントエンド', 'バックエンド', 'データベース', 'インフラ・デプロイ'],
-      'デザイン・UI/UX': ['デザイン・UI/UX'],
-      'ビジネス・企画': ['ビジネス・企画'],
-      'その他': ['全般・その他'],
-    };
-
-    const specialties = categoryMapping[category] || ['全般・その他'];
-    
-    // 該当する専門分野のメンターを取得
-    for (const specialty of specialties) {
-      const mentors = await firestoreService.getMentorsBySpecialty(specialty);
-      relevantMentors.push(...mentors);
-    }
-
-    // 重複を削除
-    const uniqueMentors = relevantMentors.filter((mentor, index, self) => 
-      self.findIndex(m => m.userId === mentor.userId) === index
-    );
-
-    if (uniqueMentors.length > 0) {
-      // 利用可能なメンターを優先
-      const availableMentors = uniqueMentors.filter(m => m.availability === 'available');
-      const mentorsToMention = availableMentors.length > 0 ? availableMentors : uniqueMentors;
-      
-      const mentions = mentorsToMention
+    if (availableMentors.length > 0) {
+      const mentions = availableMentors
         .slice(0, 5) // 最大5人まで
         .map(mentor => `<@${mentor.userId}>`)
         .join(' ');
       
       return `🔔 **${category}** の質問です\n${mentions}`;
     } else {
-      // 該当する専門分野のメンターがいない場合は全メンターにメンション
-      const allMentors = await firestoreService.getAvailableMentors();
+      // 利用可能なメンターがいない場合は全メンターを取得
+      const allMentors = await firestoreService.getAllMentors();
       
       if (allMentors.length > 0) {
         const mentions = allMentors

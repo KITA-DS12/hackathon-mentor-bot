@@ -286,25 +286,6 @@ export const createMentorRegistrationModal = () => {
       },
       {
         type: 'input',
-        block_id: 'mentor_specialties',
-        element: {
-          type: 'checkboxes',
-          action_id: 'specialties',
-          options: Object.values(MENTOR_SPECIALTIES).map((specialty) => ({
-            text: {
-              type: 'plain_text',
-              text: specialty,
-            },
-            value: specialty,
-          })),
-        },
-        label: {
-          type: 'plain_text',
-          text: '専門分野（複数選択可）',
-        },
-      },
-      {
-        type: 'input',
         block_id: 'mentor_bio',
         element: {
           type: 'plain_text_input',

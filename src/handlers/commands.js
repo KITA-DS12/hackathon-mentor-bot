@@ -24,42 +24,29 @@ export const handleMentorStatusCommand = async ({ ack, body, client }) => {
   await ack();
 
   try {
-    // 全メンターのステータスを表示
-    const mentors = await firestoreService.getAllMentors();
-    const statusMessage = formatMentorStatus(mentors);
+    // 自分がメンターとして登録されているか確認
+    const mentor = await firestoreService.getMentor(body.user_id);
+    
+    if (!mentor) {
+      await client.chat.postEphemeral({
+        channel: body.channel_id,
+        user: body.user_id,
+        text: '❌ メンターとして登録されていません。\n`/mentor-register` でメンター登録を行ってください。',
+      });
+      return;
+    }
 
-    await client.chat.postMessage({
-      channel: body.channel_id,
-      text: statusMessage,
-      blocks: [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: statusMessage,
-          },
-        },
-        {
-          type: 'actions',
-          elements: [
-            {
-              type: 'button',
-              text: {
-                type: 'plain_text',
-                text: 'ステータス変更',
-              },
-              action_id: 'change_status',
-              style: 'primary',
-            },
-          ],
-        },
-      ],
+    // ステータス変更モーダルを直接表示
+    await client.views.open({
+      trigger_id: body.trigger_id,
+      view: createScheduleModal(),
     });
   } catch (error) {
     console.error('Error handling mentor status command:', error);
-    await client.chat.postMessage({
+    await client.chat.postEphemeral({
       channel: body.channel_id,
-      text: 'ステータス確認中にエラーが発生しました。',
+      user: body.user_id,
+      text: 'ステータス変更モーダルの表示中にエラーが発生しました。',
     });
   }
 };
@@ -105,8 +92,9 @@ export const handleMentorListCommand = async ({ ack, body, client }) => {
     const mentors = await firestoreService.getAllMentors();
     
     if (mentors.length === 0) {
-      await client.chat.postMessage({
+      await client.chat.postEphemeral({
         channel: body.channel_id,
+        user: body.user_id,
         text: '現在登録されているメンターはいません。\n`/mentor-register` でメンター登録してください。',
       });
       return;
@@ -114,24 +102,23 @@ export const handleMentorListCommand = async ({ ack, body, client }) => {
 
     const mentorList = mentors
       .map((mentor) => {
-        const specialtiesText = mentor.specialties?.length 
-          ? mentor.specialties.join(', ') 
-          : '未設定';
         const statusEmoji = mentor.availability === 'available' ? '🟢' : 
                            mentor.availability === 'busy' ? '🟡' : '🔴';
         
-        return `${statusEmoji} <@${mentor.userId}> - ${specialtiesText}`;
+        return `${statusEmoji} <@${mentor.userId}> - ${mentor.name}`;
       })
       .join('\n');
 
-    await client.chat.postMessage({
+    await client.chat.postEphemeral({
       channel: body.channel_id,
+      user: body.user_id,
       text: `📋 **登録メンター一覧** (${mentors.length}名)\n\n${mentorList}`,
     });
   } catch (error) {
     console.error('Error listing mentors:', error);
-    await client.chat.postMessage({
+    await client.chat.postEphemeral({
       channel: body.channel_id,
+      user: body.user_id,
       text: 'メンター一覧の取得中にエラーが発生しました。',
     });
   }
@@ -159,8 +146,7 @@ export const handleMentorUnregisterCommand = async ({ ack, body, client }) => {
       channel: body.channel_id,
       text: `⚠️ **メンター登録解除の確認**\n\n` +
             `現在の登録情報:\n` +
-            `👤 **名前**: ${existingMentor.name}\n` +
-            `🎯 **専門分野**: ${existingMentor.specialties?.join(', ') || '未設定'}\n\n` +
+            `👤 **名前**: ${existingMentor.name}\n\n` +
             `本当にメンター登録を解除しますか？`,
       blocks: [
         {
@@ -169,8 +155,7 @@ export const handleMentorUnregisterCommand = async ({ ack, body, client }) => {
             type: 'mrkdwn',
             text: `⚠️ **メンター登録解除の確認**\n\n` +
                   `現在の登録情報:\n` +
-                  `👤 **名前**: ${existingMentor.name}\n` +
-                  `🎯 **専門分野**: ${existingMentor.specialties?.join(', ') || '未設定'}\n\n` +
+                  `👤 **名前**: ${existingMentor.name}\n\n` +
                   `本当にメンター登録を解除しますか？`,
           },
         },
