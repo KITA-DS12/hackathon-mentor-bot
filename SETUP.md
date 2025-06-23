@@ -90,21 +90,45 @@ gcloud services enable containerregistry.googleapis.com
 #### 3-3. Slash Commands 設定
 **Features** → **Slash Commands** → **Create New Command**
 
-各コマンドを個別に作成：
+各コマンドを個別に作成（**合計6つのコマンド**）：
 
 ##### `/mentor-help`
 ```
 Command: /mentor-help
 Request URL: https://your-app-url/slack/events
-Short Description: 質問フォームを表示してメンターに質問
+Short Description: 質問投稿（自由・シンプル・詳細から選択）
 Usage Hint: [質問内容]
+```
+
+##### `/mentor-register`
+```
+Command: /mentor-register
+Request URL: https://your-app-url/slack/events
+Short Description: メンターとして登録（専門分野・自己紹介設定）
+Usage Hint: 
+```
+
+##### `/mentor-unregister`
+```
+Command: /mentor-unregister
+Request URL: https://your-app-url/slack/events
+Short Description: メンター登録を解除（確認付き安全削除）
+Usage Hint: 
+```
+
+##### `/mentor-list`
+```
+Command: /mentor-list
+Request URL: https://your-app-url/slack/events
+Short Description: 登録メンター一覧を表示（ステータス付き）
+Usage Hint: 
 ```
 
 ##### `/mentor-schedule`
 ```
 Command: /mentor-schedule
 Request URL: https://your-app-url/slack/events
-Short Description: メンターの対応可能時間を設定
+Short Description: メンターの対応可能時間を設定（24時間・3時間単位）
 Usage Hint: 
 ```
 
@@ -112,9 +136,11 @@ Usage Hint:
 ```
 Command: /mentor-status
 Request URL: https://your-app-url/slack/events
-Short Description: 全メンターの現在の空き状況を表示・変更
+Short Description: メンターステータス確認・変更（対応可能/忙しい/対応不可）
 Usage Hint: 
 ```
+
+⚠️ **重要**: 各コマンドの `Request URL` は必ず **実際にデプロイしたサービスのURL** に置き換えてください。
 
 #### 3-4. Interactive Components 設定
 **Features** → **Interactivity & Shortcuts**
@@ -225,12 +251,23 @@ make logs
 ```
 
 #### 7-2. Slackでテスト
-Slackチャンネルで以下のコマンドを実行：
-```
-/mentor-help
+Slackチャンネルで以下のコマンドを順番にテスト：
+
+##### 基本動作テスト
+```bash
+/mentor-help          # 質問方法選択画面が表示される
+/mentor-list          # 「登録メンターなし」が表示される
 ```
 
-正常に動作すれば質問フォームが表示されます。
+##### メンター機能テスト
+```bash
+/mentor-register      # メンター登録フォームが表示される
+/mentor-list          # 登録したメンターが表示される
+/mentor-status        # ステータス管理画面が表示される
+/mentor-unregister    # 登録解除確認画面が表示される
+```
+
+正常に動作すれば各コマンドで適切なモーダルや応答が表示されます。
 
 ## 🔧 トラブルシューティング
 
@@ -323,15 +360,43 @@ make project-info      # プロジェクト情報表示
 
 ## ✅ セットアップ完了チェックリスト
 
+### GCP・インフラ設定
 - [ ] GCPプロジェクト作成・API有効化
 - [ ] Firestoreデータベース作成
-- [ ] Slack App作成・権限設定
-- [ ] Slash Commands設定
-- [ ] Interactive Components設定
-- [ ] Event Subscriptions設定
 - [ ] アプリケーションデプロイ
 - [ ] 環境変数設定
+
+### Slack App設定
+- [ ] Slack App作成・権限設定（7つの権限）
+- [ ] **Slash Commands設定（6つのコマンド）**
+  - [ ] `/mentor-help` - 質問投稿
+  - [ ] `/mentor-register` - メンター登録
+  - [ ] `/mentor-unregister` - メンター登録解除  
+  - [ ] `/mentor-list` - メンター一覧
+  - [ ] `/mentor-schedule` - スケジュール設定
+  - [ ] `/mentor-status` - ステータス管理
+- [ ] Interactive Components設定
+- [ ] Event Subscriptions設定（4つのイベント）
 - [ ] Slack Appインストール
-- [ ] 動作確認完了
+
+### 動作確認
+- [ ] 基本動作テスト（`/mentor-help`, `/mentor-list`）
+- [ ] メンター機能テスト（登録・一覧・ステータス・解除）
+- [ ] 質問投稿テスト（3つの投稿方法）
 
 全ての項目が完了したら、ハッカソンメンターボットの利用を開始できます！
+
+## 📱 Quick Setup Summary
+
+**最重要**: 以下の6つのSlash Commandsを忘れずに設定してください：
+
+```
+/mentor-help          ← 質問投稿（メイン機能）
+/mentor-register      ← メンター登録
+/mentor-unregister    ← メンター登録解除
+/mentor-list          ← メンター一覧
+/mentor-schedule      ← スケジュール設定
+/mentor-status        ← ステータス管理
+```
+
+すべて同じRequest URL: `https://your-service-url/slack/events`
