@@ -4,6 +4,7 @@ import { config } from './config/index.js';
 import {
   handleMentorHelpCommand,
   handleMentorHelpSimpleCommand,
+  handleMentorFreeCommand,
   handleMentorStatusCommand,
   handleMentorScheduleCommand,
 } from './handlers/commands.js';
@@ -62,6 +63,7 @@ const app = new App({
 // Slash Commands
 app.command('/mentor-help', handleMentorHelpCommand);
 app.command('/mentor-help-simple', handleMentorHelpSimpleCommand);
+app.command('/mentor-free', handleMentorFreeCommand);
 app.command('/mentor-status', handleMentorStatusCommand);
 app.command('/mentor-schedule', handleMentorScheduleCommand);
 

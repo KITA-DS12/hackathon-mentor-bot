@@ -19,7 +19,7 @@ export const handleMentorHelpCommand = async ({ ack, body, client }) => {
   }
 };
 
-// 従来のシンプルフォーム（必要に応じて使用）
+// シンプル質問フォーム（制限の少ない自由投稿）
 export const handleMentorHelpSimpleCommand = async ({ ack, body, client }) => {
   await ack();
 
@@ -30,6 +30,20 @@ export const handleMentorHelpSimpleCommand = async ({ ack, body, client }) => {
     });
   } catch (error) {
     console.error('Error opening modal:', error);
+  }
+};
+
+// 完全自由投稿用コマンド
+export const handleMentorFreeCommand = async ({ ack, body, client }) => {
+  await ack();
+
+  try {
+    await client.views.open({
+      trigger_id: body.trigger_id,
+      view: createQuestionModal(true), // 自由投稿モード
+    });
+  } catch (error) {
+    console.error('Error opening free modal:', error);
   }
 };
 
