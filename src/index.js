@@ -1,4 +1,5 @@
-import { App } from '@slack/bolt';
+import pkg from '@slack/bolt';
+const { App } = pkg;
 import { config } from './config/index.js';
 import {
   handleMentorHelpCommand,

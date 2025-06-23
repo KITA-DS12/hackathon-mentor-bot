@@ -162,11 +162,11 @@ deploy-simple: ## 簡単デプロイ（ソースから直接）
 
 logs: ## Cloud Runのログを表示
 	@echo "$(GREEN)📋 Cloud Runログを表示...$(NC)"
-	gcloud logs read --service=$(SERVICE_NAME) --region=$(REGION) --limit=50
+	gcloud run services logs read $(SERVICE_NAME) --region=$(REGION) --limit=50
 
 logs-tail: ## リアルタイムログ監視
 	@echo "$(GREEN)📊 リアルタイムログ監視中... (Ctrl+Cで終了)$(NC)"
-	gcloud logs tail --service=$(SERVICE_NAME) --region=$(REGION)
+	gcloud run services logs tail $(SERVICE_NAME) --region=$(REGION)
 
 status: ## サービス状態確認
 	@echo "$(GREEN)📊 サービス状態確認...$(NC)"
