@@ -90,7 +90,7 @@ gcloud services enable containerregistry.googleapis.com
 #### 3-3. Slash Commands 設定
 **Features** → **Slash Commands** → **Create New Command**
 
-各コマンドを個別に作成（**合計6つのコマンド**）：
+各コマンドを個別に作成（**合計5つのコマンド**）：
 
 ##### `/mentor-help`
 ```
@@ -104,7 +104,7 @@ Usage Hint: [質問内容]
 ```
 Command: /mentor-register
 Request URL: https://your-app-url/slack/events
-Short Description: メンターとして登録（専門分野・自己紹介設定）
+Short Description: メンターとして登録（名前・自己紹介設定）
 Usage Hint: 
 ```
 
@@ -121,14 +121,6 @@ Usage Hint:
 Command: /mentor-list
 Request URL: https://your-app-url/slack/events
 Short Description: 登録メンター一覧を表示（ステータス付き）
-Usage Hint: 
-```
-
-##### `/mentor-schedule`
-```
-Command: /mentor-schedule
-Request URL: https://your-app-url/slack/events
-Short Description: メンターの対応可能時間を設定（24時間・3時間単位）
 Usage Hint: 
 ```
 
@@ -368,12 +360,11 @@ make project-info      # プロジェクト情報表示
 
 ### Slack App設定
 - [ ] Slack App作成・権限設定（7つの権限）
-- [ ] **Slash Commands設定（6つのコマンド）**
+- [ ] **Slash Commands設定（5つのコマンド）**
   - [ ] `/mentor-help` - 質問投稿
   - [ ] `/mentor-register` - メンター登録
   - [ ] `/mentor-unregister` - メンター登録解除  
   - [ ] `/mentor-list` - メンター一覧
-  - [ ] `/mentor-schedule` - スケジュール設定
   - [ ] `/mentor-status` - ステータス管理
 - [ ] Interactive Components設定
 - [ ] Event Subscriptions設定（4つのイベント）
@@ -388,14 +379,13 @@ make project-info      # プロジェクト情報表示
 
 ## 📱 Quick Setup Summary
 
-**最重要**: 以下の6つのSlash Commandsを忘れずに設定してください：
+**最重要**: 以下の5つのSlash Commandsを忘れずに設定してください：
 
 ```
 /mentor-help          ← 質問投稿（メイン機能）
 /mentor-register      ← メンター登録
 /mentor-unregister    ← メンター登録解除
 /mentor-list          ← メンター一覧
-/mentor-schedule      ← スケジュール設定
 /mentor-status        ← ステータス管理
 ```
 
