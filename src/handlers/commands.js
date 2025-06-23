@@ -1,10 +1,26 @@
 import { createQuestionModal } from '../utils/modal.js';
+import { createCategorySelectionModal } from '../utils/template.js';
 import { createScheduleModal, formatMentorStatus } from '../utils/schedule.js';
 import { FirestoreService } from '../services/firestore.js';
 
 const firestoreService = new FirestoreService();
 
 export const handleMentorHelpCommand = async ({ ack, body, client }) => {
+  await ack();
+
+  try {
+    // テンプレート機能を使用（カテゴリ選択から開始）
+    await client.views.open({
+      trigger_id: body.trigger_id,
+      view: createCategorySelectionModal(),
+    });
+  } catch (error) {
+    console.error('Error opening modal:', error);
+  }
+};
+
+// 従来のシンプルフォーム（必要に応じて使用）
+export const handleMentorHelpSimpleCommand = async ({ ack, body, client }) => {
   await ack();
 
   try {
