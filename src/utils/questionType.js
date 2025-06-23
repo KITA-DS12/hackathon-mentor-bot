@@ -34,7 +34,7 @@ export const createQuestionTypeSelectionModal = () => {
             {
               text: {
                 type: 'plain_text',
-                text: '🚀 自由投稿 - 何でも気軽に質問（推奨）',
+                text: '🚀 自由投稿 - 何でも気軽に質問',
               },
               value: 'free',
             },

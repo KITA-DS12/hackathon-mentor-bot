@@ -1,11 +1,11 @@
 import { createQuestionModal } from '../utils/modal.js';
 import { createCategorySelectionModal } from '../utils/template.js';
 
-export const handleQuestionTypeSelectionSubmission = async ({ ack, body, view, client }) => {
+export const handleQuestionTypeSelectionSubmission = async ({ ack, body, client }) => {
   await ack();
 
   try {
-    const values = view.state.values;
+    const values = body.view.state.values;
     const selectedType = values.question_type.type.selected_option.value;
 
     let nextModal;
