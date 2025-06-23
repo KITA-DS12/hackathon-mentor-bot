@@ -9,13 +9,8 @@ process.env.GOOGLE_CLOUD_PROJECT = 'test-project';
 process.env.MENTOR_CHANNEL_ID = 'C1234567890';
 process.env.PORT = '3000';
 
-// グローバルモック
-global.console = {
-  ...console,
-  error: jest.fn(),
-  warn: jest.fn(),
-  log: jest.fn(),
-};
+// グローバルモック - コンソール出力は無効化しない
+// テスト実行時にコンソール出力を確認できるように
 
 // タイムゾーンの設定
 process.env.TZ = 'Asia/Tokyo';

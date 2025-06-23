@@ -1,6 +1,7 @@
 /**
  * mentorUtils.js のテスト
  */
+import { vi } from 'vitest';
 import { 
   createMentionString, 
   generateMentionText, 
@@ -9,16 +10,16 @@ import {
 import { FirestoreService } from '../../src/services/firestore.js';
 
 // FirestoreServiceをモック
-jest.mock('../../src/services/firestore.js');
+vi.mock('../../src/services/firestore.js');
 
 describe('mentorUtils', () => {
   let mockFirestoreService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFirestoreService = {
-      getAvailableMentors: jest.fn(),
-      getAllMentors: jest.fn()
+      getAvailableMentors: vi.fn(),
+      getAllMentors: vi.fn()
     };
     FirestoreService.mockImplementation(() => mockFirestoreService);
   });

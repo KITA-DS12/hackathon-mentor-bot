@@ -1,6 +1,7 @@
 /**
  * errorHandler.js のテスト
  */
+import { vi } from 'vitest';
 import { 
   handleSlackError, 
   withErrorHandling, 
@@ -11,11 +12,10 @@ describe('errorHandler', () => {
   let mockClient;
 
   beforeEach(() => {
-    jest.clearAllMocks();
     mockClient = {
       chat: {
-        postMessage: jest.fn(),
-        postEphemeral: jest.fn()
+        postMessage: vi.fn(),
+        postEphemeral: vi.fn()
       }
     };
   });
@@ -60,7 +60,7 @@ describe('errorHandler', () => {
 
   describe('withErrorHandling', () => {
     it('should execute handler successfully', async () => {
-      const mockHandler = jest.fn().mockResolvedValue('success');
+      const mockHandler = vi.fn().mockResolvedValue('success');
       const context = { client: mockClient, userId: 'U123456' };
       const errorMessage = 'テストエラー';
 
@@ -73,7 +73,7 @@ describe('errorHandler', () => {
     });
 
     it('should handle errors and send error message', async () => {
-      const mockHandler = jest.fn().mockRejectedValue(new Error('Test error'));
+      const mockHandler = vi.fn().mockRejectedValue(new Error('Test error'));
       const context = { client: mockClient, userId: 'U123456' };
       const errorMessage = 'テストエラー';
 
@@ -89,7 +89,7 @@ describe('errorHandler', () => {
     });
 
     it('should handle errors without client context', async () => {
-      const mockHandler = jest.fn().mockRejectedValue(new Error('Test error'));
+      const mockHandler = vi.fn().mockRejectedValue(new Error('Test error'));
       const context = {};
       const errorMessage = 'テストエラー';
 
@@ -101,7 +101,7 @@ describe('errorHandler', () => {
     });
 
     it('should handle errors with channel context', async () => {
-      const mockHandler = jest.fn().mockRejectedValue(new Error('Test error'));
+      const mockHandler = vi.fn().mockRejectedValue(new Error('Test error'));
       const context = { 
         client: mockClient, 
         userId: 'U123456', 

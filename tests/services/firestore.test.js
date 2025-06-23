@@ -1,11 +1,12 @@
 /**
  * FirestoreService のテスト
  */
+import { vi } from 'vitest';
 import { FirestoreService } from '../../src/services/firestore.js';
 import { Firestore } from '@google-cloud/firestore';
 
 // Firestoreをモック
-jest.mock('@google-cloud/firestore');
+vi.mock('@google-cloud/firestore');
 
 describe('FirestoreService', () => {
   let firestoreService;
@@ -14,25 +15,25 @@ describe('FirestoreService', () => {
   let mockDoc;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     mockDoc = {
-      get: jest.fn(),
-      set: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      get: vi.fn(),
+      set: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
       id: 'doc123'
     };
     
     mockCollection = {
-      doc: jest.fn().mockReturnValue(mockDoc),
-      add: jest.fn(),
-      where: jest.fn().mockReturnThis(),
-      get: jest.fn()
+      doc: vi.fn().mockReturnValue(mockDoc),
+      add: vi.fn(),
+      where: vi.fn().mockReturnThis(),
+      get: vi.fn()
     };
     
     mockFirestore = {
-      collection: jest.fn().mockReturnValue(mockCollection)
+      collection: vi.fn().mockReturnValue(mockCollection)
     };
     
     Firestore.mockImplementation(() => mockFirestore);

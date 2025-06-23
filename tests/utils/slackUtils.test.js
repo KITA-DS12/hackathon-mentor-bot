@@ -1,6 +1,7 @@
 /**
  * slackUtils.js のテスト
  */
+import { vi } from 'vitest';
 import { 
   postQuestionToMentorChannel, 
   sendUserConfirmation, 
@@ -10,7 +11,7 @@ import {
 } from '../../src/utils/slackUtils.js';
 
 // config をモック
-jest.mock('../../src/config/index.js', () => ({
+vi.mock('../../src/config/index.js', () => ({
   config: {
     app: {
       mentorChannelId: 'C1234567890'
@@ -24,12 +25,12 @@ describe('slackUtils', () => {
   beforeEach(() => {
     mockClient = {
       chat: {
-        postMessage: jest.fn(),
-        postEphemeral: jest.fn(),
-        update: jest.fn()
+        postMessage: vi.fn(),
+        postEphemeral: vi.fn(),
+        update: vi.fn()
       },
       views: {
-        open: jest.fn()
+        open: vi.fn()
       }
     };
   });

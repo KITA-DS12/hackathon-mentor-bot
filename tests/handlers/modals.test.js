@@ -1,6 +1,7 @@
 /**
  * modals.js のテスト
  */
+import { vi } from 'vitest';
 import { 
   handleQuestionModalSubmission, 
   handleReservationModalSubmission 
@@ -10,17 +11,17 @@ import { createQuestionMessage } from '../../src/utils/message.js';
 import { generateMentionText } from '../../src/utils/mentorUtils.js';
 
 // 依存関係をモック
-jest.mock('../../src/services/firestore.js');
-jest.mock('../../src/utils/message.js');
-jest.mock('../../src/utils/mentorUtils.js');
-jest.mock('../../src/handlers/followup.js', () => ({
-  getFollowUpService: jest.fn().mockReturnValue({
-    scheduleFollowUp: jest.fn()
+vi.mock('../../src/services/firestore.js');
+vi.mock('../../src/utils/message.js');
+vi.mock('../../src/utils/mentorUtils.js');
+vi.mock('../../src/handlers/followup.js', () => ({
+  getFollowUpService: vi.fn().mockReturnValue({
+    scheduleFollowUp: vi.fn()
   })
 }));
-jest.mock('../../src/handlers/reservation.js', () => ({
-  getSchedulerService: jest.fn().mockReturnValue({
-    scheduleQuestion: jest.fn()
+vi.mock('../../src/handlers/reservation.js', () => ({
+  getSchedulerService: vi.fn().mockReturnValue({
+    scheduleQuestion: vi.fn()
   })
 }));
 
@@ -29,19 +30,19 @@ describe('modals handlers', () => {
   let mockFirestoreService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     mockClient = {
       chat: {
-        postMessage: jest.fn()
+        postMessage: vi.fn()
       },
       views: {
-        open: jest.fn()
+        open: vi.fn()
       }
     };
 
     mockFirestoreService = {
-      createQuestion: jest.fn()
+      createQuestion: vi.fn()
     };
     FirestoreService.mockImplementation(() => mockFirestoreService);
 
@@ -72,7 +73,7 @@ describe('modals handlers', () => {
 
     it('should handle immediate consultation submission', async () => {
       mockFirestoreService.createQuestion.mockResolvedValue('question123');
-      const mockAck = jest.fn();
+      const mockAck = vi.fn();
 
       await handleQuestionModalSubmission({ 
         ack: mockAck, 
@@ -107,7 +108,7 @@ describe('modals handlers', () => {
           }
         }
       };
-      const mockAck = jest.fn();
+      const mockAck = vi.fn();
 
       await handleQuestionModalSubmission({ 
         ack: mockAck, 
@@ -129,12 +130,12 @@ describe('modals handlers', () => {
 
     it('should handle errors and send error message', async () => {
       mockFirestoreService.createQuestion.mockRejectedValue(new Error('Database error'));
-      const mockAck = jest.fn();
+      const mockAck = vi.fn();
 
       // エラーハンドリングラッパーのテストは複雑なので、
       // ここでは元の関数のロジックをテスト
       const originalError = console.error;
-      console.error = jest.fn();
+      console.error = vi.fn();
 
       try {
         await handleQuestionModalSubmission({ 
@@ -175,7 +176,7 @@ describe('modals handlers', () => {
 
     it('should handle reservation submission successfully', async () => {
       mockFirestoreService.createQuestion.mockResolvedValue('question123');
-      const mockAck = jest.fn();
+      const mockAck = vi.fn();
 
       await handleReservationModalSubmission({ 
         ack: mockAck, 
@@ -214,7 +215,7 @@ describe('modals handlers', () => {
         }
       };
       mockFirestoreService.createQuestion.mockResolvedValue('question123');
-      const mockAck = jest.fn();
+      const mockAck = vi.fn();
 
       await handleReservationModalSubmission({ 
         ack: mockAck, 
