@@ -111,47 +111,81 @@ PORT=8080
 MENTOR_CHANNEL_ID=C1234567890
 ```
 
-### ローカル開発
+### 🚀 クイックスタート（推奨）
 ```bash
-# 依存関係インストール
-npm install
+# リポジトリクローン
+git clone https://github.com/KITA-DS12/hackathon-mentor-bot.git
+cd hackathon-mentor-bot
 
-# 環境変数設定
-cp .env.example .env
-# .envファイルを編集
+# 自動セットアップ実行
+./scripts/setup.sh
 
-# 開発サーバー起動
-npm run dev
-
-# コード品質チェック
-npm run lint
-npm run format
+# または個別実行
+make setup
+make install
+make env-setup
 ```
 
-### Docker開発
+### 📋 Makefileコマンド一覧
 ```bash
-# Dockerイメージビルド
-docker build -t hackathon-mentor-bot .
+# ヘルプ表示
+make help
 
-# コンテナ実行
-docker run -p 8080:8080 --env-file .env hackathon-mentor-bot
+# 初回セットアップ
+make setup              # GCP API有効化、Firestore作成
+make install             # 依存関係インストール
+make env-setup           # 環境変数設定ガイド
+
+# 開発
+make dev                 # ローカル開発サーバー起動
+make test                # テスト実行
+make lint                # リントチェック
+make format              # コードフォーマット
+make check               # リント + フォーマット
+
+# デプロイ
+make build               # Dockerイメージビルド
+make deploy              # Cloud Runにデプロイ
+make deploy-env          # 環境変数付きデプロイ
+
+# 運用・モニタリング
+make logs                # ログ表示
+make logs-tail           # リアルタイムログ
+make status              # サービス状態確認
+make service-url         # サービスURL表示
+
+# Slack関連
+make slack-test          # URL検証テスト
+make slack-webhook-url   # Webhook URL表示
+
+# ユーティリティ
+make clean               # 一時ファイル削除
+make ngrok               # ローカル公開（開発用）
+make project-info        # プロジェクト情報表示
+```
+
+### ローカル開発
+```bash
+# 環境変数設定後
+make dev
+
+# または従来の方法
+npm install
+cp .env.example .env
+# .envファイルを編集
+npm run dev
 ```
 
 ### Cloud Runデプロイ
 ```bash
-# Cloud Build使用（推奨）
-gcloud builds submit --config cloudbuild.yaml
+# 推奨方法
+make deploy
 
-# 直接デプロイ
-gcloud run deploy hackathon-mentor-bot \
-  --source . \
-  --region asia-northeast1 \
-  --allow-unauthenticated \
-  --min-instances 0 \
-  --max-instances 10 \
-  --cpu 1 \
-  --memory 512Mi \
-  --set-env-vars SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN,SLACK_SIGNING_SECRET=$SLACK_SIGNING_SECRET
+# 環境変数付きデプロイ
+make deploy-env
+
+# 従来の方法
+gcloud builds submit --config cloudbuild.yaml
 ```
 
 ## Slack App設定

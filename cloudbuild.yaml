@@ -32,5 +32,11 @@ steps:
       - '--set-env-vars'
       - 'SLACK_BOT_TOKEN=${_SLACK_BOT_TOKEN},SLACK_SIGNING_SECRET=${_SLACK_SIGNING_SECRET},GOOGLE_CLOUD_PROJECT=$PROJECT_ID,MENTOR_CHANNEL_ID=${_MENTOR_CHANNEL_ID}'
 
+# Makefileからの実行時に使用する代替設定値
+substitutions:
+  _SLACK_BOT_TOKEN: 'your-slack-bot-token'
+  _SLACK_SIGNING_SECRET: 'your-slack-signing-secret' 
+  _MENTOR_CHANNEL_ID: 'your-mentor-channel-id'
+
 images:
   - 'gcr.io/$PROJECT_ID/hackathon-mentor-bot:$COMMIT_SHA'
