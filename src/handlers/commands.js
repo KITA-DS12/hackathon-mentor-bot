@@ -8,19 +8,16 @@ import { withErrorHandling, ERROR_MESSAGES } from '../utils/errorHandler.js';
 
 const firestoreService = new FirestoreService();
 
-export const handleMentorHelpCommand = async ({ ack, body, client }) => {
-  await ack();
-
-  try {
+export const handleMentorHelpCommand = withErrorHandling(
+  async ({ ack, body, client }) => {
+    await ack();
+    
     // 質問方法選択モーダルを表示
-    await client.views.open({
-      trigger_id: body.trigger_id,
-      view: createQuestionTypeSelectionModal(),
-    });
-  } catch (error) {
-    console.error('Error opening question type selection modal:', error);
-  }
-};
+    await openModal(client, body.trigger_id, createQuestionTypeSelectionModal());
+  },
+  (args) => ({ client: args[0].client, userId: args[0].body.user_id, channelId: args[0].body.channel_id }),
+  ERROR_MESSAGES.QUESTION_TYPE_SELECTION
+);
 
 export const handleMentorStatusCommand = withErrorHandling(
   async ({ ack, body, client }) => {

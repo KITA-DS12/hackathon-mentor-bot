@@ -27,7 +27,7 @@ export const handleSlackError = async (client, userId, message, channelId = null
 /**
  * 統一されたエラーハンドリングラッパー
  * @param {Function} handler - 実行する非同期関数
- * @param {Object} context - エラー処理のためのコンテキスト
+ * @param {Object|Function} context - エラー処理のためのコンテキスト、または関数の引数からコンテキストを生成する関数
  * @param {string} errorMessage - ユーザーに表示するエラーメッセージ
  */
 export const withErrorHandling = (handler, context, errorMessage) => {
@@ -37,12 +37,15 @@ export const withErrorHandling = (handler, context, errorMessage) => {
     } catch (error) {
       console.error(`Error in ${handler.name}:`, error);
       
-      if (context.client && context.userId) {
+      // コンテキストが関数の場合、引数から動的に生成
+      const actualContext = typeof context === 'function' ? context(args) : context;
+      
+      if (actualContext.client && actualContext.userId) {
         await handleSlackError(
-          context.client, 
-          context.userId, 
+          actualContext.client, 
+          actualContext.userId, 
           errorMessage,
-          context.channelId
+          actualContext.channelId
         );
       }
       
