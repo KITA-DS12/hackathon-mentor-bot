@@ -1,18 +1,6 @@
 export default {
-  // ESモジュールの設定
-  preset: null,
   testEnvironment: 'node',
-  transform: {},
-  extensionsToTreatAsEsm: ['.js'],
-  globals: {
-    'ts-jest': {
-      useESM: true
-    }
-  },
-  moduleNameMapping: {
-    '^(\\.{1,2}/.*)\\.js$': '$1',
-  },
-
+  
   // テストファイルの設定
   testMatch: [
     '**/tests/**/*.test.js',
@@ -38,7 +26,7 @@ export default {
     }
   },
 
-  // セットアップとモック
+  // セットアップ
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   clearMocks: true,
   restoreMocks: true,
