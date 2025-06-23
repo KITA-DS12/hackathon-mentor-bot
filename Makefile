@@ -13,7 +13,7 @@ YELLOW = \033[93m
 RED = \033[91m
 NC = \033[0m # No Color
 
-.PHONY: help setup install dev build deploy clean logs status test lint format
+.PHONY: help setup install dev build deploy clean logs status test test-watch test-coverage lint format
 
 # デフォルトターゲット
 help: ## ヘルプを表示
@@ -78,6 +78,15 @@ dev: ## ローカル開発サーバー起動
 test: ## テストを実行
 	@echo "$(GREEN)🧪 テストを実行...$(NC)"
 	npm test
+
+test-watch: ## テスト監視モード
+	@echo "$(GREEN)👀 テスト監視モード...$(NC)"
+	npm run test:watch
+
+test-coverage: ## テストカバレッジ生成
+	@echo "$(GREEN)📊 テストカバレッジレポート生成...$(NC)"
+	npm run test:coverage
+	@echo "$(GREEN)📁 カバレッジレポート: coverage/index.html$(NC)"
 
 lint: ## リントチェック
 	@echo "$(GREEN)🔍 リントチェック...$(NC)"
