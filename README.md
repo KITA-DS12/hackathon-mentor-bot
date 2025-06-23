@@ -1,99 +1,268 @@
 # Hackathon Mentor Bot
 
 ハッカソン向けのメンター呼び出し・質問管理Slack botです。
-効率的な質問管理、メンタースケジュール管理、予約機能を提供します。
+効率的な質問管理、メンタースケジュール管理、予約機能、自動フォローアップを提供します。
 
 ## 主な機能
 
 ### 基本機能
 - `/mentor-help` - 質問フォームを表示してメンターに質問
 - 質問の自動分類・整理（カテゴリ、緊急度別）
-- スレッドベースの対応管理とステータス追跡
+- スレッドベースの対応管理とリアルタイムステータス追跡
 
-### メンタースケジュール機能
-- `/mentor-schedule` - メンターが対応可能時間を事前登録
-- `/mentor-status` - 全メンターの現在の空き状況を表示
-- リアルタイムの対応可能状況の確認
+### メンタースケジュール機能 
+- `/mentor-schedule` - メンターが対応可能時間を事前登録（24時間対応、3時間単位）
+- `/mentor-status` - 全メンターの現在の空き状況を表示・変更
+- リアルタイムの対応可能状況の確認と自動ステータス管理
+
+### 質問予約機能
+- 即座に相談 or 予約相談の選択
+- 30分後/1時間後/2時間後/明日午前の予約設定
+- 予約時間での自動解決確認（5分間の猶予）
+- 未解決時の自動メンター通知
 
 ### スレッド対応管理機能
 - 質問投稿時の対応ボタン（対応開始/詳細確認）
 - 対応開始時の自動スレッド作成とメンター・質問者招待
 - リアルタイムステータス管理：🟡対応待ち → 🔵対応中 → ✅完了
 - 対応中断・再開機能（🟠中断中ステータス）
-- 対応履歴の自動記録
+- 対応履歴の自動記録と可視化
 
-### フォローアップ機能
-- 質問後30分・2時間での自動フォローアップ
-- 未解決問題の再通知
-- 解決状況の追跡
+### フォローアップ自動化機能
+- 質問後30分・2時間での自動フォローアップメッセージ
+- 未解決問題の自動メンター再通知
+- 解決状況の追跡とボタンベースの応答
+- メンター対応開始時のフォローアップ自動キャンセル
 
 ## 技術構成
 
-- **Runtime**: Node.js(TypeScript) + Slack Bolt SDK
-- **Database**: Firestore
-- **Deployment**: Google Cloud Run
-- **Cost**: 無料枠内で運用可能
+- **Runtime**: Node.js + Slack Bolt SDK
+- **Database**: Firestore（リアルタイム同期対応）
+- **Deployment**: Google Cloud Run（自動スケーリング）
+- **Cost**: 無料枠内で運用可能（最小リソース設定）
 
 ## 質問フォーム項目
 
 ### 必須項目
-- 質問内容（詳細な問題説明）
-- カテゴリ（技術/デザイン/ビジネス/その他）
-- 緊急度（至急/普通/低め）
+- 質問内容（テキストエリア）: "例：ログイン機能でエラーが出て困っています"
+- カテゴリ（選択式）: 技術的な問題/デザイン・UI/UX/ビジネス・企画/その他
+- 緊急度（選択式）: 🔴至急/🟡普通/🟢低め
+- 相談方法（選択式）: すぐ相談したい/予約して相談
 
 ### 任意項目
-- 現在の状況（試したこと）
-- 関連コード・リンク
-- エラーメッセージ
+- 現在の状況（短文）: "例：公式ドキュメントを見たが解決せず"
+- 関連コード・リンク（URL）: "GitHub Gist、CodePen、参考サイトのURLなど"
+- エラーメッセージ（短文）: "出ているエラーがあれば貼り付けてください"
+
+### 予約選択時の追加項目
+- 希望相談時間（選択式）: 30分後/1時間後/2時間後/明日午前など
+- 自動解決確認（チェックボックス）: "予約時間に自力解決確認を受け取る"（デフォルトON）
+
+## データベース設計
+
+### questions コレクション
+```javascript
+{
+  id: "question_123",
+  userId: "user_id",
+  content: "質問内容",
+  category: "技術的な問題",
+  urgency: "普通", 
+  consultationType: "すぐ相談したい",
+  status: "waiting|in_progress|paused|completed",
+  assignedMentor: "mentor_user_id",
+  threadTs: "1234567890.123456",
+  statusHistory: [
+    { status: "waiting", timestamp: "...", user: "..." },
+    { status: "in_progress", timestamp: "...", user: "mentor_id" }
+  ],
+  // 任意項目
+  currentSituation: "試したこと",
+  relatedLinks: "関連URL",
+  errorMessage: "エラー内容",
+  // 予約関連
+  reservationTime: "30分後",
+  autoResolveCheck: true,
+  createdAt: "timestamp",
+  updatedAt: "timestamp"
+}
+```
+
+### mentors コレクション
+```javascript
+{
+  userId: "mentor_user_id",
+  availability: "available|busy|offline",
+  schedule: [
+    { day: "2024-01-01", timeSlots: ["09:00-12:00", "15:00-18:00"] }
+  ],
+  updatedAt: "timestamp"
+}
+```
 
 ## セットアップ
 
 ### 必要な環境変数
-```
-SLACK_BOT_TOKEN=xoxb-...
-SLACK_SIGNING_SECRET=...
+```env
+SLACK_BOT_TOKEN=xoxb-your-token
+SLACK_SIGNING_SECRET=your-signing-secret
 GOOGLE_CLOUD_PROJECT=your-project-id
 PORT=8080
+MENTOR_CHANNEL_ID=C1234567890
 ```
 
 ### ローカル開発
 ```bash
+# 依存関係インストール
 npm install
+
+# 環境変数設定
+cp .env.example .env
+# .envファイルを編集
+
+# 開発サーバー起動
 npm run dev
+
+# コード品質チェック
+npm run lint
+npm run format
+```
+
+### Docker開発
+```bash
+# Dockerイメージビルド
+docker build -t hackathon-mentor-bot .
+
+# コンテナ実行
+docker run -p 8080:8080 --env-file .env hackathon-mentor-bot
 ```
 
 ### Cloud Runデプロイ
 ```bash
+# Cloud Build使用（推奨）
+gcloud builds submit --config cloudbuild.yaml
+
+# 直接デプロイ
 gcloud run deploy hackathon-mentor-bot \
   --source . \
   --region asia-northeast1 \
   --allow-unauthenticated \
   --min-instances 0 \
-  --max-instances 2 \
-  --cpu 0.25 \
-  --memory 256Mi
+  --max-instances 10 \
+  --cpu 1 \
+  --memory 512Mi \
+  --set-env-vars SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN,SLACK_SIGNING_SECRET=$SLACK_SIGNING_SECRET
 ```
 
 ## Slack App設定
 
-以下の機能を有効にする必要があります：
-- Slash Commands: `/mentor-help`, `/mentor-schedule`, `/mentor-status`
-- Interactive Components: モーダル・ボタン処理用
-- OAuth & Permissions: 必要なbot権限
-- Event Subscriptions: メッセージ受信用
+### 必要な権限（OAuth & Permissions）
+```
+channels:read
+chat:write
+chat:write.public
+commands
+im:read
+im:write
+users:read
+```
+
+### Slash Commands
+- `/mentor-help` - 質問フォーム表示
+- `/mentor-schedule` - スケジュール設定
+- `/mentor-status` - ステータス確認・変更
+
+### Interactive Components
+- Request URL: `https://your-app-url/slack/events`
+
+### Event Subscriptions
+- Request URL: `https://your-app-url/slack/events`
 
 ## 使用方法
 
-### 質問者
-1. `/mentor-help` でフォーム表示
-2. 必要項目を入力して送信
-3. メンターからの回答を待機
-4. 自動フォローアップに応答
+### 質問者の使い方
+1. **質問作成**: `/mentor-help` でフォーム表示
+2. **内容入力**: 必要項目を入力して送信
+3. **予約設定**: 即座相談 or 予約相談を選択
+4. **フォローアップ**: 30分後、2時間後の自動確認に応答
+5. **解決報告**: 問題解決時にボタンで報告
 
-### メンター
-1. `/mentor-schedule` で対応可能時間を登録
-2. 質問通知を受信したら「対応開始」ボタンをクリック
-3. 自動作成されたスレッドで質問者とやり取り
-4. 必要に応じて「対応中断」で一時中断
-5. 完了時に「対応完了」ボタンをクリック
-6. 対応履歴が自動で記録される
+### メンターの使い方
+1. **スケジュール登録**: `/mentor-schedule` で対応可能時間を設定
+2. **ステータス管理**: `/mentor-status` で現在の状況を確認・変更
+3. **質問対応**: 
+   - 「対応開始」ボタンで質問に着手
+   - 自動作成されたスレッドで質問者とやり取り
+   - 「中断」で一時中断、「完了」で対応終了
+4. **フォローアップ**: 未解決質問の自動通知を受信
+
+## アーキテクチャ
+
+```
+src/
+├── config/           # 設定ファイル
+│   ├── constants.js  # 定数定義
+│   └── index.js      # 環境変数管理
+├── handlers/         # Slackイベントハンドラー
+│   ├── actions.js    # ボタンアクション処理
+│   ├── commands.js   # スラッシュコマンド処理
+│   ├── modals.js     # モーダル送信処理
+│   ├── schedule.js   # スケジュール関連処理
+│   ├── reservation.js # 予約機能処理
+│   └── followup.js   # フォローアップ処理
+├── services/         # ビジネスロジック
+│   ├── firestore.js  # Firestore操作
+│   ├── scheduler.js  # 予約スケジューリング
+│   └── followup.js   # フォローアップ管理
+├── utils/           # ユーティリティ
+│   ├── modal.js     # モーダル生成
+│   ├── message.js   # メッセージ生成
+│   └── schedule.js  # スケジュール関連
+└── index.js         # アプリケーションエントリーポイント
+```
+
+## パフォーマンス最適化
+
+- **メモリ効率**: 最小512MBで動作
+- **レスポンス時間**: Slack 3秒制限内で処理
+- **自動スケーリング**: Cloud Runの0→10インスタンス
+- **タイムアウト処理**: 予約・フォローアップのメモリ内管理
+
+## モニタリング
+
+### ログ監視
+```bash
+# Cloud Run ログ確認
+gcloud logs read --project=$PROJECT_ID --service=hackathon-mentor-bot
+
+# リアルタイムログ
+gcloud logs tail --project=$PROJECT_ID --service=hackathon-mentor-bot
+```
+
+### パフォーマンス確認
+- Cloud Run メトリクス（CPU・メモリ使用率）
+- Firestore 使用量監視
+- Slack API レート制限監視
+
+## トラブルシューティング
+
+### よくある問題
+1. **モーダルが表示されない**: Slack App権限を確認
+2. **Firestoreエラー**: プロジェクトIDと権限を確認
+3. **タイムアウト**: Cloud Runのメモリ・CPU設定を調整
+4. **Slack API制限**: レート制限と権限を確認
+
+### デバッグ
+```bash
+# ローカルでのデバッグ実行
+DEBUG=* npm run dev
+
+# 特定のSlackイベントをテスト
+curl -X POST localhost:8080/slack/events \
+  -H "Content-Type: application/json" \
+  -d '{"type":"url_verification","challenge":"test"}'
+```
+
+## ライセンス
+
+MIT
