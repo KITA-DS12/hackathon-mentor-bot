@@ -1,5 +1,6 @@
 import { createQuestionModal, createMentorRegistrationModal } from '../utils/modal.js';
 import { createCategorySelectionModal } from '../utils/template.js';
+import { createQuestionTypeSelectionModal } from '../utils/questionType.js';
 import { createScheduleModal, formatMentorStatus } from '../utils/schedule.js';
 import { FirestoreService } from '../services/firestore.js';
 
@@ -9,41 +10,13 @@ export const handleMentorHelpCommand = async ({ ack, body, client }) => {
   await ack();
 
   try {
-    // テンプレート機能を使用（カテゴリ選択から開始）
+    // 質問方法選択モーダルを表示
     await client.views.open({
       trigger_id: body.trigger_id,
-      view: createCategorySelectionModal(),
+      view: createQuestionTypeSelectionModal(),
     });
   } catch (error) {
-    console.error('Error opening modal:', error);
-  }
-};
-
-// シンプル質問フォーム（制限の少ない自由投稿）
-export const handleMentorHelpSimpleCommand = async ({ ack, body, client }) => {
-  await ack();
-
-  try {
-    await client.views.open({
-      trigger_id: body.trigger_id,
-      view: createQuestionModal(),
-    });
-  } catch (error) {
-    console.error('Error opening modal:', error);
-  }
-};
-
-// 完全自由投稿用コマンド
-export const handleMentorFreeCommand = async ({ ack, body, client }) => {
-  await ack();
-
-  try {
-    await client.views.open({
-      trigger_id: body.trigger_id,
-      view: createQuestionModal(true), // 自由投稿モード
-    });
-  } catch (error) {
-    console.error('Error opening free modal:', error);
+    console.error('Error opening question type selection modal:', error);
   }
 };
 

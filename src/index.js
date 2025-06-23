@@ -3,8 +3,6 @@ const { App } = pkg;
 import { config } from './config/index.js';
 import {
   handleMentorHelpCommand,
-  handleMentorHelpSimpleCommand,
-  handleMentorFreeCommand,
   handleMentorStatusCommand,
   handleMentorScheduleCommand,
   handleMentorRegisterCommand,
@@ -22,6 +20,9 @@ import {
 import {
   handleMentorRegistrationSubmission,
 } from './handlers/mentorRegistration.js';
+import {
+  handleQuestionTypeSelectionSubmission,
+} from './handlers/questionType.js';
 import {
   handleStartResponse,
   handleCheckDetails,
@@ -67,8 +68,6 @@ const app = new App({
 
 // Slash Commands
 app.command('/mentor-help', handleMentorHelpCommand);
-app.command('/mentor-help-simple', handleMentorHelpSimpleCommand);
-app.command('/mentor-free', handleMentorFreeCommand);
 app.command('/mentor-status', handleMentorStatusCommand);
 app.command('/mentor-schedule', handleMentorScheduleCommand);
 app.command('/mentor-register', handleMentorRegisterCommand);
@@ -83,6 +82,7 @@ app.view('category_selection_modal', handleCategorySelectionSubmission);
 app.view('subcategory_selection_modal', handleSubcategorySelectionSubmission);
 app.view('template_question_modal', handleTemplateQuestionSubmission);
 app.view('mentor_registration_modal', handleMentorRegistrationSubmission);
+app.view('question_type_selection_modal', handleQuestionTypeSelectionSubmission);
 
 // Button Actions
 app.action('start_response', handleStartResponse);
