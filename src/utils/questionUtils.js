@@ -10,6 +10,7 @@ import { QUESTION_STATUS, CONSULTATION_TYPES } from '../config/constants.js';
  * @returns {Object} 質問データ
  */
 export const extractQuestionData = (values, userId) => {
+  const now = new Date();
   return {
     userId,
     content: values.question_content.content.value,
@@ -20,10 +21,12 @@ export const extractQuestionData = (values, userId) => {
     relatedLinks: values.related_links?.related_links?.value || '',
     errorMessage: values.error_message?.error_message?.value || '',
     status: QUESTION_STATUS.WAITING,
+    createdAt: now,
+    updatedAt: now,
     statusHistory: [
       {
         status: QUESTION_STATUS.WAITING,
-        timestamp: new Date(),
+        timestamp: now,
         user: userId,
       },
     ],

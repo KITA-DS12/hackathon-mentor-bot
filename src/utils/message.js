@@ -1,5 +1,34 @@
 import { STATUS_EMOJI } from '../config/constants.js';
 
+/**
+ * タイムスタンプを安全にフォーマットする
+ * @param {Date|Object|undefined} timestamp - Dateオブジェクト、Firestore Timestamp、またはundefined
+ * @returns {string} フォーマットされたタイムスタンプ文字列
+ */
+const formatTimestamp = (timestamp) => {
+  try {
+    let date;
+    
+    if (!timestamp) {
+      date = new Date(); // createdAtがない場合は現在時刻を使用
+    } else if (timestamp instanceof Date) {
+      date = timestamp;
+    } else if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+      date = timestamp.toDate(); // Firestore Timestamp
+    } else if (timestamp.seconds) {
+      date = new Date(timestamp.seconds * 1000); // Firestore Timestampの生データ
+    } else {
+      date = new Date(timestamp); // 文字列やミリ秒を試す
+    }
+    
+    const unixTimestamp = Math.floor(date.getTime() / 1000);
+    return `<!date^${unixTimestamp}^{date_short_pretty} {time}|${date.toLocaleString()}>`;
+  } catch (error) {
+    console.error('Error formatting timestamp:', error, 'Input:', timestamp);
+    return new Date().toLocaleString(); // フォールバック
+  }
+};
+
 export const createQuestionMessage = (question, questionId) => {
   const statusEmoji = STATUS_EMOJI[question.status];
 
@@ -88,9 +117,7 @@ export const createQuestionMessage = (question, questionId) => {
         elements: [
           {
             type: 'mrkdwn',
-            text: `質問ID: ${questionId} | 作成: <!date^${Math.floor(
-              question.createdAt.toDate().getTime() / 1000
-            )}^{date_short_pretty} {time}|${question.createdAt.toDate().toLocaleString()}>`,
+            text: `質問ID: ${questionId} | 作成: ${formatTimestamp(question.createdAt)}`,
           },
         ],
       },

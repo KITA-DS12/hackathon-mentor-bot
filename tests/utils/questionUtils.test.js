@@ -34,6 +34,8 @@ describe('questionUtils', () => {
         relatedLinks: 'https://example.com',
         errorMessage: 'Error: test',
         status: QUESTION_STATUS.WAITING,
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
         statusHistory: expect.arrayContaining([
           expect.objectContaining({
             status: QUESTION_STATUS.WAITING,
