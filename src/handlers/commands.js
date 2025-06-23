@@ -1,4 +1,8 @@
 import { createQuestionModal } from '../utils/modal.js';
+import { createScheduleModal, formatMentorStatus } from '../utils/schedule.js';
+import { FirestoreService } from '../services/firestore.js';
+
+const firestoreService = new FirestoreService();
 
 export const handleMentorHelpCommand = async ({ ack, body, client }) => {
   await ack();
@@ -13,16 +17,63 @@ export const handleMentorHelpCommand = async ({ ack, body, client }) => {
   }
 };
 
-export const handleMentorStatusCommand = async ({ ack, say }) => {
+export const handleMentorStatusCommand = async ({ ack, body, client }) => {
   await ack();
 
-  // TODO: メンター一覧とステータスを表示する機能を実装
-  await say('メンターステータス機能は準備中です。');
+  try {
+    // 全メンターのステータスを表示
+    const mentors = await firestoreService.getAllMentors();
+    const statusMessage = formatMentorStatus(mentors);
+
+    await client.chat.postMessage({
+      channel: body.channel_id,
+      text: statusMessage,
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: statusMessage,
+          },
+        },
+        {
+          type: 'actions',
+          elements: [
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: 'ステータス変更',
+              },
+              action_id: 'change_status',
+              style: 'primary',
+            },
+          ],
+        },
+      ],
+    });
+  } catch (error) {
+    console.error('Error handling mentor status command:', error);
+    await client.chat.postMessage({
+      channel: body.channel_id,
+      text: 'ステータス確認中にエラーが発生しました。',
+    });
+  }
 };
 
-export const handleMentorScheduleCommand = async ({ ack, say }) => {
+export const handleMentorScheduleCommand = async ({ ack, body, client }) => {
   await ack();
 
-  // TODO: メンタースケジュール管理機能を実装
-  await say('メンタースケジュール機能は準備中です。');
+  try {
+    await client.views.open({
+      trigger_id: body.trigger_id,
+      view: createScheduleModal(),
+    });
+  } catch (error) {
+    console.error('Error opening schedule modal:', error);
+    await client.chat.postMessage({
+      channel: body.channel_id,
+      text: 'スケジュール設定モーダルの表示中にエラーが発生しました。',
+    });
+  }
 };

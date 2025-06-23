@@ -119,4 +119,56 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  async getAllMentors() {
+    try {
+      const snapshot = await this.db.collection('mentors').get();
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error getting all mentors:', error);
+      throw error;
+    }
+  }
+
+  async setMentorSchedule(userId, date, timeSlots) {
+    try {
+      const mentorRef = this.db.collection('mentors').doc(userId);
+      const doc = await mentorRef.get();
+
+      let schedule = [];
+      if (doc.exists && doc.data().schedule) {
+        schedule = doc.data().schedule.filter((item) => item.day !== date);
+      }
+
+      schedule.push({
+        day: date,
+        timeSlots: timeSlots,
+      });
+
+      await mentorRef.set(
+        {
+          userId,
+          schedule,
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error('Error setting mentor schedule:', error);
+      throw error;
+    }
+  }
+
+  async getMentorSchedule(userId) {
+    try {
+      const doc = await this.db.collection('mentors').doc(userId).get();
+      if (!doc.exists) {
+        return [];
+      }
+      return doc.data().schedule || [];
+    } catch (error) {
+      console.error('Error getting mentor schedule:', error);
+      throw error;
+    }
+  }
 }

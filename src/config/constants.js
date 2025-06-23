@@ -36,3 +36,20 @@ export const RESERVATION_TIMES = {
   '2時間後': 120,
   明日午前: 'tomorrow_morning',
 };
+
+export const MENTOR_AVAILABILITY = {
+  AVAILABLE: 'available',
+  BUSY: 'busy',
+  OFFLINE: 'offline',
+};
+
+export const TIME_SLOTS = [
+  '00:00-03:00',
+  '03:00-06:00',
+  '06:00-09:00',
+  '09:00-12:00',
+  '12:00-15:00',
+  '15:00-18:00',
+  '18:00-21:00',
+  '21:00-24:00',
+];
