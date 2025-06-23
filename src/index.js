@@ -38,9 +38,24 @@ import {
   handleFollowUpUnresolvedAction,
 } from './handlers/followup.js';
 
+// 環境変数チェック
+if (!config.slack.botToken || !config.slack.signingSecret) {
+  console.error('❌ 必要な環境変数が設定されていません:');
+  console.error('  SLACK_BOT_TOKEN:', config.slack.botToken ? '✅ 設定済み' : '❌ 未設定');
+  console.error('  SLACK_SIGNING_SECRET:', config.slack.signingSecret ? '✅ 設定済み' : '❌ 未設定');
+  console.error('');
+  console.error('🔧 環境変数を設定してください:');
+  console.error('  - Cloud Console: https://console.cloud.google.com/run');
+  console.error('  - または make set-env コマンドを使用');
+  console.error('');
+  
+  // 環境変数が未設定でもサーバーは起動する（ヘルスチェック対応）
+  console.log('⚠️  環境変数が未設定ですが、サーバーを起動します（設定後に再起動してください）');
+}
+
 const app = new App({
-  token: config.slack.botToken,
-  signingSecret: config.slack.signingSecret,
+  token: config.slack.botToken || 'dummy-token',
+  signingSecret: config.slack.signingSecret || 'dummy-secret',
   port: config.app.port,
 });
 
@@ -79,15 +94,29 @@ app.error((error) => {
   try {
     await app.start();
 
-    // スケジューラーサービスを初期化
-    initializeScheduler(app.client);
+    // 環境変数が設定されている場合のみサービスを初期化
+    if (config.slack.botToken && config.slack.signingSecret) {
+      // スケジューラーサービスを初期化
+      initializeScheduler(app.client);
 
-    // フォローアップサービスを初期化
-    initializeFollowUp(app.client);
+      // フォローアップサービスを初期化
+      initializeFollowUp(app.client);
+      
+      console.log('🎉 Hackathon Mentor Bot is fully initialized!');
+    } else {
+      console.log('⚠️  Slack認証情報が未設定のため、一部機能は無効です');
+    }
 
     console.log('⚡️ Hackathon Mentor Bot is running!');
     console.log(`🚀 Port: ${config.app.port}`);
-    console.log(`📡 Mentor Channel ID: ${config.app.mentorChannelId}`);
+    console.log(`📡 Mentor Channel ID: ${config.app.mentorChannelId || '未設定'}`);
+    
+    if (!config.slack.botToken || !config.slack.signingSecret) {
+      console.log('');
+      console.log('🔧 次のステップ:');
+      console.log('  1. 環境変数を設定: make set-env');
+      console.log('  2. サービスを再起動');
+    }
   } catch (error) {
     console.error('Failed to start the app:', error);
     process.exit(1);
