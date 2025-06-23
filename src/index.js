@@ -7,6 +7,7 @@ import {
   handleMentorScheduleCommand,
   handleMentorRegisterCommand,
   handleMentorListCommand,
+  handleMentorUnregisterCommand,
 } from './handlers/commands.js';
 import {
   handleCategorySelectionSubmission,
@@ -23,6 +24,10 @@ import {
 import {
   handleQuestionTypeSelectionSubmission,
 } from './handlers/questionType.js';
+import {
+  handleConfirmUnregisterAction,
+  handleCancelUnregisterAction,
+} from './handlers/mentorUnregister.js';
 import {
   handleStartResponse,
   handleCheckDetails,
@@ -72,6 +77,7 @@ app.command('/mentor-status', handleMentorStatusCommand);
 app.command('/mentor-schedule', handleMentorScheduleCommand);
 app.command('/mentor-register', handleMentorRegisterCommand);
 app.command('/mentor-list', handleMentorListCommand);
+app.command('/mentor-unregister', handleMentorUnregisterCommand);
 
 // Modal Submissions
 app.view('question_modal', handleQuestionModalSubmission);
@@ -94,6 +100,8 @@ app.action('mark_resolved', handleMarkResolvedAction);
 app.action('send_to_mentor', handleSendToMentorAction);
 app.action('followup_resolved', handleFollowUpResolvedAction);
 app.action('followup_unresolved', handleFollowUpUnresolvedAction);
+app.action('confirm_unregister', handleConfirmUnregisterAction);
+app.action('cancel_unregister', handleCancelUnregisterAction);
 
 // Error handling
 app.error((error) => {

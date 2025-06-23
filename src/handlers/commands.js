@@ -136,3 +136,75 @@ export const handleMentorListCommand = async ({ ack, body, client }) => {
     });
   }
 };
+
+export const handleMentorUnregisterCommand = async ({ ack, body, client }) => {
+  await ack();
+
+  try {
+    const userId = body.user_id;
+    
+    // 現在のメンター情報を確認
+    const existingMentor = await firestoreService.getMentor(userId);
+    
+    if (!existingMentor) {
+      await client.chat.postMessage({
+        channel: body.channel_id,
+        text: '❌ メンターとして登録されていません。\n`/mentor-register` でメンター登録を行ってください。',
+      });
+      return;
+    }
+
+    // 確認メッセージを表示
+    await client.chat.postMessage({
+      channel: body.channel_id,
+      text: `⚠️ **メンター登録解除の確認**\n\n` +
+            `現在の登録情報:\n` +
+            `👤 **名前**: ${existingMentor.name}\n` +
+            `🎯 **専門分野**: ${existingMentor.specialties?.join(', ') || '未設定'}\n\n` +
+            `本当にメンター登録を解除しますか？`,
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `⚠️ **メンター登録解除の確認**\n\n` +
+                  `現在の登録情報:\n` +
+                  `👤 **名前**: ${existingMentor.name}\n` +
+                  `🎯 **専門分野**: ${existingMentor.specialties?.join(', ') || '未設定'}\n\n` +
+                  `本当にメンター登録を解除しますか？`,
+          },
+        },
+        {
+          type: 'actions',
+          elements: [
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: '🗑️ 解除する',
+              },
+              action_id: 'confirm_unregister',
+              style: 'danger',
+              value: userId,
+            },
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: '❌ キャンセル',
+              },
+              action_id: 'cancel_unregister',
+            },
+          ],
+        },
+      ],
+    });
+
+  } catch (error) {
+    console.error('Error handling mentor unregister command:', error);
+    await client.chat.postMessage({
+      channel: body.channel_id,
+      text: 'メンター登録解除の処理中にエラーが発生しました。',
+    });
+  }
+};

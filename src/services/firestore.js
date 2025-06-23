@@ -225,4 +225,13 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  async deleteMentor(userId) {
+    try {
+      await this.db.collection('mentors').doc(userId).delete();
+    } catch (error) {
+      console.error('Error deleting mentor:', error);
+      throw error;
+    }
+  }
 }
