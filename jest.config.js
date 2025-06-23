@@ -1,7 +1,6 @@
 export default {
   preset: null,
   testEnvironment: 'node',
-  extensionsToTreatAsEsm: ['.js'],
   
   // テストファイルの設定
   testMatch: [
