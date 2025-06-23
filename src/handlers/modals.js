@@ -1,164 +1,113 @@
 import { FirestoreService } from '../services/firestore.js';
 import { createQuestionMessage } from '../utils/message.js';
 import { createReservationModal } from '../utils/modal.js';
-import { QUESTION_STATUS, CONSULTATION_TYPES } from '../config/constants.js';
-import { config } from '../config/index.js';
+import { CONSULTATION_TYPES } from '../config/constants.js';
+import { extractQuestionData, extractReservationData, isReservationConsultation } from '../utils/questionUtils.js';
+import { generateMentionText } from '../utils/mentorUtils.js';
+import { postQuestionToMentorChannel, sendUserConfirmation, openModal } from '../utils/slackUtils.js';
+import { withErrorHandling, ERROR_MESSAGES } from '../utils/errorHandler.js';
 
 const firestoreService = new FirestoreService();
 
-export const handleQuestionModalSubmission = async ({ ack, body, client }) => {
-  await ack();
+/**
+ * 予約相談モーダルを表示
+ */
+const showReservationModal = async (client, triggerId, questionData) => {
+  return await openModal(client, triggerId, createReservationModal(), questionData);
+};
 
+/**
+ * 即座相談の処理
+ */
+const processImmediateConsultation = async (client, questionData) => {
+  const questionId = await firestoreService.createQuestion(questionData);
+  
+  // メンターチャンネルに質問を投稿
+  const questionMessage = createQuestionMessage(questionData, questionId);
+  const mentionText = await generateMentionText(questionData.category);
+  
+  await postQuestionToMentorChannel(client, questionMessage, mentionText);
+  
+  // 質問者にDMで確認
+  await sendUserConfirmation(
+    client, 
+    questionData.userId, 
+    '質問を送信しました。メンターからの返答をお待ちください。'
+  );
+  
+  // フォローアップを開始
+  await scheduleFollowUp(questionId, questionData.userId);
+  
+  return questionId;
+};
+
+/**
+ * フォローアップのスケジューリング
+ */
+const scheduleFollowUp = async (questionId, userId) => {
   try {
-    const values = body.view.state.values;
-
-    const questionData = {
-      userId: body.user.id,
-      content: values.question_content.content.value,
-      category: values.category?.category?.selected_option?.value || 'その他',
-      urgency: values.urgency?.urgency?.selected_option?.value || '🟡普通',
-      consultationType: values.consultation_type?.consultation_type?.selected_option?.value || 'すぐ相談したい',
-      currentSituation: values.current_situation?.current_situation?.value || '',
-      relatedLinks: values.related_links?.related_links?.value || '',
-      errorMessage: values.error_message?.error_message?.value || '',
-      status: QUESTION_STATUS.WAITING,
-      statusHistory: [
-        {
-          status: QUESTION_STATUS.WAITING,
-          timestamp: new Date(),
-          user: body.user.id,
-        },
-      ],
-    };
-
-    if (questionData.consultationType === CONSULTATION_TYPES.RESERVATION) {
-      // 予約相談の場合は追加のモーダルを表示
-      await client.views.open({
-        trigger_id: body.trigger_id,
-        view: {
-          ...createReservationModal(),
-          private_metadata: JSON.stringify(questionData),
-        },
-      });
-      return;
-    }
-
-    // 即座に相談の場合はそのまま処理
-    const questionId = await firestoreService.createQuestion(questionData);
-
-    // メンターチャンネルに質問を投稿（メンションあり）
-    const questionMessage = createQuestionMessage(questionData, questionId);
-    
-    // 適切なメンターを見つけてメンション
-    const mentionText = await getMentionText(questionData.category);
-
-    await client.chat.postMessage({
-      channel: config.app.mentorChannelId,
-      text: `${mentionText}\n\n${questionMessage.text}`,
-      blocks: questionMessage.blocks,
-    });
-
-    // 質問者にDMで確認
-    await client.chat.postMessage({
-      channel: body.user.id,
-      text: '質問を送信しました。メンターからの返答をお待ちください。',
-    });
-
-    // フォローアップを開始
     const { getFollowUpService } = await import('./followup.js');
     const followUpService = getFollowUpService();
-
+    
     if (followUpService) {
-      followUpService.scheduleFollowUp(questionId, body.user.id);
+      followUpService.scheduleFollowUp(questionId, userId);
     }
   } catch (error) {
-    console.error('Error handling question modal submission:', error);
-
-    await client.chat.postMessage({
-      channel: body.user.id,
-      text: '質問の送信中にエラーが発生しました。もう一度お試しください。',
-    });
+    console.error('Error scheduling follow-up:', error);
   }
 };
 
-export const handleReservationModalSubmission = async ({
-  ack,
-  body,
-  client,
-}) => {
-  await ack();
+export const handleQuestionModalSubmission = withErrorHandling(
+  async ({ ack, body, client }) => {
+    await ack();
+    
+    const questionData = extractQuestionData(body.view.state.values, body.user.id);
+    
+    if (isReservationConsultation(questionData)) {
+      await showReservationModal(client, body.trigger_id, questionData);
+      return;
+    }
+    
+    await processImmediateConsultation(client, questionData);
+  },
+  { client: null, userId: null }, // contextは実行時に設定
+  ERROR_MESSAGES.QUESTION_SUBMISSION
+);
 
+/**
+ * 予約スケジューリング
+ */
+const scheduleReservation = async (questionId, questionData) => {
   try {
-    const values = body.view.state.values;
-    const questionData = JSON.parse(body.view.private_metadata);
-
-    const reservationTime =
-      values.reservation_time.reservation_time.selected_option.value;
-    const autoResolveCheck =
-      values.auto_resolve_check?.auto_resolve_check?.selected_options?.length >
-      0;
-
-    const updatedQuestionData = {
-      ...questionData,
-      reservationTime,
-      autoResolveCheck,
-    };
-
-    const questionId =
-      await firestoreService.createQuestion(updatedQuestionData);
-
-    // スケジューラーサービスの取得
     const { getSchedulerService } = await import('./reservation.js');
     const schedulerService = getSchedulerService();
-
+    
     if (schedulerService) {
-      schedulerService.scheduleQuestion(questionId, updatedQuestionData);
+      schedulerService.scheduleQuestion(questionId, questionData);
     }
-
-    await client.chat.postMessage({
-      channel: body.user.id,
-      text: `予約相談を受け付けました。${reservationTime}に${autoResolveCheck ? '自動確認後、' : ''}メンターに質問を送信します。`,
-    });
   } catch (error) {
-    console.error('Error handling reservation modal submission:', error);
-
-    await client.chat.postMessage({
-      channel: body.user.id,
-      text: '予約の処理中にエラーが発生しました。もう一度お試しください。',
-    });
+    console.error('Error scheduling reservation:', error);
   }
 };
 
-// メンター向けのメンション文を生成
-async function getMentionText(category) {
-  try {
-    // 全ての利用可能なメンターを取得
-    const availableMentors = await firestoreService.getAvailableMentors();
+export const handleReservationModalSubmission = withErrorHandling(
+  async ({ ack, body, client }) => {
+    await ack();
     
-    if (availableMentors.length > 0) {
-      const mentions = availableMentors
-        .slice(0, 5) // 最大5人まで
-        .map(mentor => `<@${mentor.userId}>`)
-        .join(' ');
-      
-      return `🔔 **${category}** の質問です\n${mentions}`;
-    } else {
-      // 利用可能なメンターがいない場合は全メンターを取得
-      const allMentors = await firestoreService.getAllMentors();
-      
-      if (allMentors.length > 0) {
-        const mentions = allMentors
-          .slice(0, 3) // 最大3人まで
-          .map(mentor => `<@${mentor.userId}>`)
-          .join(' ');
-        
-        return `🔔 新しい質問です\n${mentions}`;
-      } else {
-        return '🔔 新しい質問が投稿されました（登録メンターなし）';
-      }
-    }
-  } catch (error) {
-    console.error('Error getting mention text:', error);
-    return '🔔 新しい質問が投稿されました';
-  }
-}
+    const questionData = JSON.parse(body.view.private_metadata);
+    const updatedQuestionData = extractReservationData(body.view.state.values, questionData);
+    
+    const questionId = await firestoreService.createQuestion(updatedQuestionData);
+    
+    await scheduleReservation(questionId, updatedQuestionData);
+    
+    const confirmationMessage = `予約相談を受け付けました。${updatedQuestionData.reservationTime}に${
+      updatedQuestionData.autoResolveCheck ? '自動確認後、' : ''
+    }メンターに質問を送信します。`;
+    
+    await sendUserConfirmation(client, body.user.id, confirmationMessage);
+  },
+  { client: null, userId: null },
+  ERROR_MESSAGES.RESERVATION_PROCESSING
+);
+
