@@ -3,6 +3,8 @@ import {
   URGENCY_LEVELS,
   CONSULTATION_TYPES,
   RESERVATION_TIMES,
+  MENTOR_SPECIALTIES,
+  MENTOR_AVAILABILITY,
 } from '../config/constants.js';
 
 export const createQuestionModal = (freeMode = false) => {
@@ -241,6 +243,129 @@ export const createReservationModal = () => {
           text: '自動解決確認',
         },
         optional: true,
+      },
+    ],
+  };
+};
+
+export const createMentorRegistrationModal = () => {
+  return {
+    type: 'modal',
+    callback_id: 'mentor_registration_modal',
+    title: {
+      type: 'plain_text',
+      text: 'メンター登録',
+    },
+    submit: {
+      type: 'plain_text',
+      text: '登録する',
+    },
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '*メンターとして登録*\n質問が投稿された際にメンションを受け取ることができます。',
+        },
+      },
+      {
+        type: 'input',
+        block_id: 'mentor_name',
+        element: {
+          type: 'plain_text_input',
+          action_id: 'name',
+          placeholder: {
+            type: 'plain_text',
+            text: '表示名を入力してください',
+          },
+        },
+        label: {
+          type: 'plain_text',
+          text: 'メンター名',
+        },
+      },
+      {
+        type: 'input',
+        block_id: 'mentor_specialties',
+        element: {
+          type: 'checkboxes',
+          action_id: 'specialties',
+          options: Object.values(MENTOR_SPECIALTIES).map((specialty) => ({
+            text: {
+              type: 'plain_text',
+              text: specialty,
+            },
+            value: specialty,
+          })),
+        },
+        label: {
+          type: 'plain_text',
+          text: '専門分野（複数選択可）',
+        },
+      },
+      {
+        type: 'input',
+        block_id: 'mentor_bio',
+        element: {
+          type: 'plain_text_input',
+          action_id: 'bio',
+          multiline: true,
+          placeholder: {
+            type: 'plain_text',
+            text: '経歴、得意技術、サポートできる内容など（任意）',
+          },
+        },
+        label: {
+          type: 'plain_text',
+          text: '自己紹介（任意）',
+        },
+        optional: true,
+      },
+      {
+        type: 'input',
+        block_id: 'initial_availability',
+        element: {
+          type: 'static_select',
+          action_id: 'availability',
+          placeholder: {
+            type: 'plain_text',
+            text: '初期ステータスを選択',
+          },
+          initial_option: {
+            text: {
+              type: 'plain_text',
+              text: '🟢 対応可能',
+            },
+            value: MENTOR_AVAILABILITY.AVAILABLE,
+          },
+          options: [
+            {
+              text: {
+                type: 'plain_text',
+                text: '🟢 対応可能',
+              },
+              value: MENTOR_AVAILABILITY.AVAILABLE,
+            },
+            {
+              text: {
+                type: 'plain_text',
+                text: '🟡 忙しい',
+              },
+              value: MENTOR_AVAILABILITY.BUSY,
+            },
+            {
+              text: {
+                type: 'plain_text',
+                text: '🔴 対応不可',
+              },
+              value: MENTOR_AVAILABILITY.OFFLINE,
+            },
+          ],
+        },
+        label: {
+          type: 'plain_text',
+          text: '初期ステータス',
+        },
       },
     ],
   };

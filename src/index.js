@@ -7,6 +7,8 @@ import {
   handleMentorFreeCommand,
   handleMentorStatusCommand,
   handleMentorScheduleCommand,
+  handleMentorRegisterCommand,
+  handleMentorListCommand,
 } from './handlers/commands.js';
 import {
   handleCategorySelectionSubmission,
@@ -17,6 +19,9 @@ import {
   handleQuestionModalSubmission,
   handleReservationModalSubmission,
 } from './handlers/modals.js';
+import {
+  handleMentorRegistrationSubmission,
+} from './handlers/mentorRegistration.js';
 import {
   handleStartResponse,
   handleCheckDetails,
@@ -66,6 +71,8 @@ app.command('/mentor-help-simple', handleMentorHelpSimpleCommand);
 app.command('/mentor-free', handleMentorFreeCommand);
 app.command('/mentor-status', handleMentorStatusCommand);
 app.command('/mentor-schedule', handleMentorScheduleCommand);
+app.command('/mentor-register', handleMentorRegisterCommand);
+app.command('/mentor-list', handleMentorListCommand);
 
 // Modal Submissions
 app.view('question_modal', handleQuestionModalSubmission);
@@ -75,6 +82,7 @@ app.view('status_modal', handleStatusModalSubmission);
 app.view('category_selection_modal', handleCategorySelectionSubmission);
 app.view('subcategory_selection_modal', handleSubcategorySelectionSubmission);
 app.view('template_question_modal', handleTemplateQuestionSubmission);
+app.view('mentor_registration_modal', handleMentorRegistrationSubmission);
 
 // Button Actions
 app.action('start_response', handleStartResponse);

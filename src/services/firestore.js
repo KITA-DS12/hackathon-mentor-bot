@@ -171,4 +171,58 @@ export class FirestoreService {
       throw error;
     }
   }
+
+  async createOrUpdateMentor(userId, mentorData) {
+    try {
+      await this.db.collection('mentors').doc(userId).set(
+        {
+          ...mentorData,
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error('Error creating/updating mentor:', error);
+      throw error;
+    }
+  }
+
+  async getMentor(userId) {
+    try {
+      const doc = await this.db.collection('mentors').doc(userId).get();
+      if (!doc.exists) {
+        return null;
+      }
+      return { id: doc.id, ...doc.data() };
+    } catch (error) {
+      console.error('Error getting mentor:', error);
+      throw error;
+    }
+  }
+
+  async getAvailableMentors() {
+    try {
+      const snapshot = await this.db
+        .collection('mentors')
+        .where('availability', '==', 'available')
+        .get();
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error getting available mentors:', error);
+      throw error;
+    }
+  }
+
+  async getMentorsBySpecialty(specialty) {
+    try {
+      const snapshot = await this.db
+        .collection('mentors')
+        .where('specialties', 'array-contains', specialty)
+        .get();
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error getting mentors by specialty:', error);
+      throw error;
+    }
+  }
 }

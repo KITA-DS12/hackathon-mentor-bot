@@ -15,12 +15,10 @@ export const handleQuestionModalSubmission = async ({ ack, body, client }) => {
     const questionData = {
       userId: body.user.id,
       content: values.question_content.content.value,
-      category: values.category.category.selected_option.value,
-      urgency: values.urgency.urgency.selected_option.value,
-      consultationType:
-        values.consultation_type.consultation_type.selected_option.value,
-      currentSituation:
-        values.current_situation?.current_situation?.value || '',
+      category: values.category?.category?.selected_option?.value || 'その他',
+      urgency: values.urgency?.urgency?.selected_option?.value || '🟡普通',
+      consultationType: values.consultation_type?.consultation_type?.selected_option?.value || 'すぐ相談したい',
+      currentSituation: values.current_situation?.current_situation?.value || '',
       relatedLinks: values.related_links?.related_links?.value || '',
       errorMessage: values.error_message?.error_message?.value || '',
       status: QUESTION_STATUS.WAITING,
@@ -48,12 +46,16 @@ export const handleQuestionModalSubmission = async ({ ack, body, client }) => {
     // 即座に相談の場合はそのまま処理
     const questionId = await firestoreService.createQuestion(questionData);
 
-    // メンターチャンネルに質問を投稿
+    // メンターチャンネルに質問を投稿（メンションあり）
     const questionMessage = createQuestionMessage(questionData, questionId);
+    
+    // 適切なメンターを見つけてメンション
+    const mentionText = await getMentionText(questionData.category);
 
     await client.chat.postMessage({
       channel: config.app.mentorChannelId,
-      ...questionMessage,
+      text: `${mentionText}\n\n${questionMessage.text}`,
+      blocks: questionMessage.blocks,
     });
 
     // 質問者にDMで確認
@@ -126,3 +128,62 @@ export const handleReservationModalSubmission = async ({
     });
   }
 };
+
+// メンター向けのメンション文を生成
+async function getMentionText(category) {
+  try {
+    // カテゴリに基づいて適切なメンターを取得
+    let relevantMentors = [];
+    
+    // カテゴリマッピング
+    const categoryMapping = {
+      '技術的な問題': ['フロントエンド', 'バックエンド', 'データベース', 'インフラ・デプロイ'],
+      'デザイン・UI/UX': ['デザイン・UI/UX'],
+      'ビジネス・企画': ['ビジネス・企画'],
+      'その他': ['全般・その他'],
+    };
+
+    const specialties = categoryMapping[category] || ['全般・その他'];
+    
+    // 該当する専門分野のメンターを取得
+    for (const specialty of specialties) {
+      const mentors = await firestoreService.getMentorsBySpecialty(specialty);
+      relevantMentors.push(...mentors);
+    }
+
+    // 重複を削除
+    const uniqueMentors = relevantMentors.filter((mentor, index, self) => 
+      self.findIndex(m => m.userId === mentor.userId) === index
+    );
+
+    if (uniqueMentors.length > 0) {
+      // 利用可能なメンターを優先
+      const availableMentors = uniqueMentors.filter(m => m.availability === 'available');
+      const mentorsToMention = availableMentors.length > 0 ? availableMentors : uniqueMentors;
+      
+      const mentions = mentorsToMention
+        .slice(0, 5) // 最大5人まで
+        .map(mentor => `<@${mentor.userId}>`)
+        .join(' ');
+      
+      return `🔔 **${category}** の質問です\n${mentions}`;
+    } else {
+      // 該当する専門分野のメンターがいない場合は全メンターにメンション
+      const allMentors = await firestoreService.getAvailableMentors();
+      
+      if (allMentors.length > 0) {
+        const mentions = allMentors
+          .slice(0, 3) // 最大3人まで
+          .map(mentor => `<@${mentor.userId}>`)
+          .join(' ');
+        
+        return `🔔 新しい質問です\n${mentions}`;
+      } else {
+        return '🔔 新しい質問が投稿されました（登録メンターなし）';
+      }
+    }
+  } catch (error) {
+    console.error('Error getting mention text:', error);
+    return '🔔 新しい質問が投稿されました';
+  }
+}

@@ -53,3 +53,15 @@ export const TIME_SLOTS = [
   '18:00-21:00',
   '21:00-24:00',
 ];
+
+export const MENTOR_SPECIALTIES = {
+  FRONTEND: 'フロントエンド',
+  BACKEND: 'バックエンド',
+  DESIGN: 'デザイン・UI/UX',
+  BUSINESS: 'ビジネス・企画',
+  INFRASTRUCTURE: 'インフラ・デプロイ',
+  MOBILE: 'モバイル開発',
+  DATABASE: 'データベース',
+  AI_ML: 'AI・機械学習',
+  GENERAL: '全般・その他',
+};
