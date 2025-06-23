@@ -112,7 +112,15 @@ deploy: ## Cloud Runにデプロイ
 	fi
 	@echo "$(YELLOW)📋 プロジェクト: $(PROJECT_ID)$(NC)"
 	@echo "$(YELLOW)📍 リージョン: $(REGION)$(NC)"
-	gcloud builds submit --config cloudbuild.yaml
+	@echo "$(YELLOW)⚠️  環境変数が必要です。'make deploy-env'または直接環境変数を設定してください$(NC)"
+	@if [ -f .env ]; then \
+		echo "$(YELLOW)💡 .envファイルを読み込んでデプロイします$(NC)"; \
+		source .env && gcloud builds submit --config cloudbuild.yaml \
+			--substitutions=_SLACK_BOT_TOKEN=$$SLACK_BOT_TOKEN,_SLACK_SIGNING_SECRET=$$SLACK_SIGNING_SECRET,_MENTOR_CHANNEL_ID=$$MENTOR_CHANNEL_ID; \
+	else \
+		echo "$(YELLOW)💡 プレースホルダー値でデプロイします（後で環境変数を設定してください）$(NC)"; \
+		gcloud builds submit --config cloudbuild.yaml; \
+	fi
 	@echo "$(GREEN)✅ デプロイ完了！$(NC)"
 	@make service-url
 
@@ -127,7 +135,26 @@ deploy-env: ## 環境変数付きでデプロイ
 		--source . \
 		--region $(REGION) \
 		--allow-unauthenticated \
+		--memory 512Mi \
+		--cpu 1 \
+		--min-instances 0 \
+		--max-instances 10 \
 		--set-env-vars SLACK_BOT_TOKEN=$$SLACK_BOT_TOKEN,SLACK_SIGNING_SECRET=$$SLACK_SIGNING_SECRET,GOOGLE_CLOUD_PROJECT=$$GOOGLE_CLOUD_PROJECT,MENTOR_CHANNEL_ID=$$MENTOR_CHANNEL_ID
+
+deploy-simple: ## 簡単デプロイ（ソースから直接）
+	@echo "$(GREEN)🚀 ソースから直接デプロイ...$(NC)"
+	@echo "$(YELLOW)⚠️  このコマンドは環境変数を設定しません。デプロイ後にCloud Consoleで設定してください$(NC)"
+	gcloud run deploy $(SERVICE_NAME) \
+		--source . \
+		--region $(REGION) \
+		--allow-unauthenticated \
+		--memory 512Mi \
+		--cpu 1 \
+		--min-instances 0 \
+		--max-instances 10
+	@echo "$(GREEN)✅ デプロイ完了！$(NC)"
+	@make service-url
+	@echo "$(YELLOW)🔧 Cloud Console (https://console.cloud.google.com/run) で環境変数を設定してください$(NC)"
 
 # ====================
 # 運用・モニタリング関連
@@ -280,3 +307,14 @@ validate-env: ## 環境変数の検証
 	if [ -z "$$GOOGLE_CLOUD_PROJECT" ]; then echo "$(RED)❌ GOOGLE_CLOUD_PROJECT が設定されていません$(NC)"; exit 1; fi && \
 	if [ -z "$$MENTOR_CHANNEL_ID" ]; then echo "$(RED)❌ MENTOR_CHANNEL_ID が設定されていません$(NC)"; exit 1; fi && \
 	echo "$(GREEN)✅ 環境変数の検証完了$(NC)"
+
+set-env: ## Cloud Runの環境変数を設定
+	@echo "$(GREEN)🔧 Cloud Runの環境変数を設定...$(NC)"
+	@if [ ! -f .env ]; then \
+		echo "$(RED)❌ .envファイルが見つかりません$(NC)"; \
+		exit 1; \
+	fi
+	@source .env && gcloud run services update $(SERVICE_NAME) \
+		--region $(REGION) \
+		--set-env-vars SLACK_BOT_TOKEN=$$SLACK_BOT_TOKEN,SLACK_SIGNING_SECRET=$$SLACK_SIGNING_SECRET,GOOGLE_CLOUD_PROJECT=$$GOOGLE_CLOUD_PROJECT,MENTOR_CHANNEL_ID=$$MENTOR_CHANNEL_ID
+	@echo "$(GREEN)✅ 環境変数設定完了$(NC)"

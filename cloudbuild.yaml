@@ -1,11 +1,11 @@
 steps:
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/hackathon-mentor-bot:$COMMIT_SHA', '.']
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/hackathon-mentor-bot:$SHORT_SHA', '.']
   
   # Push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/hackathon-mentor-bot:$COMMIT_SHA']
+    args: ['push', 'gcr.io/$PROJECT_ID/hackathon-mentor-bot:$SHORT_SHA']
   
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -15,7 +15,7 @@ steps:
       - 'deploy'
       - 'hackathon-mentor-bot'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/hackathon-mentor-bot:$COMMIT_SHA'
+      - 'gcr.io/$PROJECT_ID/hackathon-mentor-bot:$SHORT_SHA'
       - '--region'
       - 'asia-northeast1'
       - '--platform'
@@ -32,11 +32,11 @@ steps:
       - '--set-env-vars'
       - 'SLACK_BOT_TOKEN=${_SLACK_BOT_TOKEN},SLACK_SIGNING_SECRET=${_SLACK_SIGNING_SECRET},GOOGLE_CLOUD_PROJECT=$PROJECT_ID,MENTOR_CHANNEL_ID=${_MENTOR_CHANNEL_ID}'
 
-# Makefileからの実行時に使用する代替設定値
+# デフォルト値（環境変数を使用しない場合）
 substitutions:
-  _SLACK_BOT_TOKEN: 'your-slack-bot-token'
-  _SLACK_SIGNING_SECRET: 'your-slack-signing-secret' 
-  _MENTOR_CHANNEL_ID: 'your-mentor-channel-id'
+  _SLACK_BOT_TOKEN: 'placeholder-token'
+  _SLACK_SIGNING_SECRET: 'placeholder-secret' 
+  _MENTOR_CHANNEL_ID: 'placeholder-channel-id'
 
 images:
-  - 'gcr.io/$PROJECT_ID/hackathon-mentor-bot:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/hackathon-mentor-bot:$SHORT_SHA'
