@@ -9,8 +9,15 @@ process.env.GOOGLE_CLOUD_PROJECT = 'test-project';
 process.env.MENTOR_CHANNEL_ID = 'C1234567890';
 process.env.PORT = '3000';
 
-// グローバルモック - コンソール出力は無効化しない
-// テスト実行時にコンソール出力を確認できるように
+// グローバルモック
+import { vi } from 'vitest';
+
+global.console = {
+  ...console,
+  error: vi.fn(),
+  warn: vi.fn(),
+  log: vi.fn(),
+};
 
 // タイムゾーンの設定
 process.env.TZ = 'Asia/Tokyo';

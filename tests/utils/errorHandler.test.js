@@ -85,7 +85,7 @@ describe('errorHandler', () => {
         channel: 'U123456',
         text: errorMessage
       });
-      expect(console.error).toHaveBeenCalledWith('Error in mockHandler:', expect.any(Error));
+      expect(console.error).toHaveBeenCalledWith('Error in spy:', expect.any(Error));
     });
 
     it('should handle errors without client context', async () => {
@@ -96,7 +96,7 @@ describe('errorHandler', () => {
       const wrappedHandler = withErrorHandling(mockHandler, context, errorMessage);
 
       await expect(wrappedHandler()).rejects.toThrow('Test error');
-      expect(console.error).toHaveBeenCalledWith('Error in mockHandler:', expect.any(Error));
+      expect(console.error).toHaveBeenCalledWith('Error in spy:', expect.any(Error));
       expect(mockClient.chat.postMessage).not.toHaveBeenCalled();
     });
 

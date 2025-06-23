@@ -9,42 +9,60 @@ import {
 import { FirestoreService } from '../../src/services/firestore.js';
 import { createQuestionMessage } from '../../src/utils/message.js';
 import { generateMentionText } from '../../src/utils/mentorUtils.js';
+import { postQuestionToMentorChannel, sendUserConfirmation } from '../../src/utils/slackUtils.js';
 
-// 依存関係をモック
-vi.mock('../../src/services/firestore.js');
-vi.mock('../../src/utils/message.js');
-vi.mock('../../src/utils/mentorUtils.js');
+// FirestoreServiceをモック
+vi.mock('../../src/services/firestore.js', () => {
+  const mockInstance = {
+    createQuestion: vi.fn().mockResolvedValue('question123')
+  };
+  return {
+    FirestoreService: vi.fn(() => mockInstance),
+    __mockInstance: mockInstance
+  };
+});
+vi.mock('../../src/utils/message.js', () => ({
+  createQuestionMessage: vi.fn()
+}));
+vi.mock('../../src/utils/mentorUtils.js', () => ({
+  generateMentionText: vi.fn()
+}));
+vi.mock('../../src/utils/slackUtils.js', () => ({
+  postQuestionToMentorChannel: vi.fn().mockResolvedValue(),
+  sendUserConfirmation: vi.fn().mockResolvedValue(),
+  openModal: vi.fn().mockResolvedValue()
+}));
 vi.mock('../../src/handlers/followup.js', () => ({
-  getFollowUpService: vi.fn().mockReturnValue({
+  getFollowUpService: vi.fn(() => ({
     scheduleFollowUp: vi.fn()
-  })
+  }))
 }));
 vi.mock('../../src/handlers/reservation.js', () => ({
-  getSchedulerService: vi.fn().mockReturnValue({
+  getSchedulerService: vi.fn(() => ({
     scheduleQuestion: vi.fn()
-  })
+  }))
 }));
+
+// モックされた関数とインスタンスをインポート
+const { openModal, postQuestionToMentorChannel, sendUserConfirmation } = await import('../../src/utils/slackUtils.js');
+const { __mockInstance } = await import('../../src/services/firestore.js');
+const { generateMentionText } = await import('../../src/utils/mentorUtils.js');
+const { createQuestionMessage } = await import('../../src/utils/message.js');
 
 describe('modals handlers', () => {
   let mockClient;
-  let mockFirestoreService;
 
   beforeEach(() => {
     vi.clearAllMocks();
     
     mockClient = {
       chat: {
-        postMessage: vi.fn()
+        postMessage: vi.fn().mockResolvedValue()
       },
       views: {
-        open: vi.fn()
+        open: vi.fn().mockResolvedValue()
       }
     };
-
-    mockFirestoreService = {
-      createQuestion: vi.fn()
-    };
-    FirestoreService.mockImplementation(() => mockFirestoreService);
 
     createQuestionMessage.mockReturnValue({
       text: '質問内容',
@@ -72,7 +90,7 @@ describe('modals handlers', () => {
     };
 
     it('should handle immediate consultation submission', async () => {
-      mockFirestoreService.createQuestion.mockResolvedValue('question123');
+      __mockInstance.createQuestion.mockResolvedValue('question123');
       const mockAck = vi.fn();
 
       await handleQuestionModalSubmission({ 
@@ -82,7 +100,7 @@ describe('modals handlers', () => {
       });
 
       expect(mockAck).toHaveBeenCalled();
-      expect(mockFirestoreService.createQuestion).toHaveBeenCalledWith(
+      expect(__mockInstance.createQuestion).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'U123456',
           content: 'テスト質問',
@@ -91,7 +109,8 @@ describe('modals handlers', () => {
         })
       );
       expect(generateMentionText).toHaveBeenCalledWith('技術的な問題');
-      expect(mockClient.chat.postMessage).toHaveBeenCalledTimes(2); // メンターチャンネル + ユーザーDM
+      expect(postQuestionToMentorChannel).toHaveBeenCalledTimes(1);
+      expect(sendUserConfirmation).toHaveBeenCalledTimes(1);
     });
 
     it('should handle reservation consultation by opening modal', async () => {
@@ -117,19 +136,17 @@ describe('modals handlers', () => {
       });
 
       expect(mockAck).toHaveBeenCalled();
-      expect(mockClient.views.open).toHaveBeenCalledWith(
-        expect.objectContaining({
-          trigger_id: 'trigger123',
-          view: expect.objectContaining({
-            private_metadata: expect.any(String)
-          })
-        })
+      expect(openModal).toHaveBeenCalledWith(
+        mockClient,
+        'trigger123',
+        expect.any(Object),
+        expect.any(Object)
       );
-      expect(mockFirestoreService.createQuestion).not.toHaveBeenCalled();
+      expect(__mockInstance.createQuestion).not.toHaveBeenCalled();
     });
 
     it('should handle errors and send error message', async () => {
-      mockFirestoreService.createQuestion.mockRejectedValue(new Error('Database error'));
+      __mockInstance.createQuestion.mockRejectedValue(new Error('Database error'));
       const mockAck = vi.fn();
 
       // エラーハンドリングラッパーのテストは複雑なので、
@@ -175,7 +192,7 @@ describe('modals handlers', () => {
     };
 
     it('should handle reservation submission successfully', async () => {
-      mockFirestoreService.createQuestion.mockResolvedValue('question123');
+      __mockInstance.createQuestion.mockResolvedValue('question123');
       const mockAck = vi.fn();
 
       await handleReservationModalSubmission({ 
@@ -185,7 +202,7 @@ describe('modals handlers', () => {
       });
 
       expect(mockAck).toHaveBeenCalled();
-      expect(mockFirestoreService.createQuestion).toHaveBeenCalledWith(
+      expect(__mockInstance.createQuestion).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'U123456',
           content: 'テスト質問',
@@ -193,10 +210,11 @@ describe('modals handlers', () => {
           autoResolveCheck: true
         })
       );
-      expect(mockClient.chat.postMessage).toHaveBeenCalledWith({
-        channel: 'U123456',
-        text: expect.stringContaining('予約相談を受け付けました')
-      });
+      expect(sendUserConfirmation).toHaveBeenCalledWith(
+        mockClient,
+        'U123456',
+        expect.stringContaining('予約相談を受け付けました')
+      );
     });
 
     it('should handle missing auto resolve check', async () => {
@@ -214,7 +232,7 @@ describe('modals handlers', () => {
           }
         }
       };
-      mockFirestoreService.createQuestion.mockResolvedValue('question123');
+      __mockInstance.createQuestion.mockResolvedValue('question123');
       const mockAck = vi.fn();
 
       await handleReservationModalSubmission({ 
@@ -223,7 +241,7 @@ describe('modals handlers', () => {
         client: mockClient 
       });
 
-      expect(mockFirestoreService.createQuestion).toHaveBeenCalledWith(
+      expect(__mockInstance.createQuestion).toHaveBeenCalledWith(
         expect.objectContaining({
           autoResolveCheck: false
         })

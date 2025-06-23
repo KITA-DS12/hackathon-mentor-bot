@@ -1,7 +1,7 @@
 /**
  * mentorUtils.js のテスト
  */
-import { vi } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { 
   createMentionString, 
   generateMentionText, 
@@ -10,18 +10,23 @@ import {
 import { FirestoreService } from '../../src/services/firestore.js';
 
 // FirestoreServiceをモック
-vi.mock('../../src/services/firestore.js');
+vi.mock('../../src/services/firestore.js', () => {
+  const mockInstance = {
+    getAvailableMentors: vi.fn(),
+    getAllMentors: vi.fn()
+  };
+  return {
+    FirestoreService: vi.fn(() => mockInstance),
+    __mockInstance: mockInstance
+  };
+});
+
+// モックインスタンスをインポート
+const { __mockInstance } = await import('../../src/services/firestore.js');
 
 describe('mentorUtils', () => {
-  let mockFirestoreService;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFirestoreService = {
-      getAvailableMentors: vi.fn(),
-      getAllMentors: vi.fn()
-    };
-    FirestoreService.mockImplementation(() => mockFirestoreService);
   });
 
   describe('createMentionString', () => {
@@ -58,16 +63,15 @@ describe('mentorUtils', () => {
 
   describe('generateMentionText', () => {
     it('should generate mention text with available mentors', async () => {
-      const availableMentors = [
+      __mockInstance.getAvailableMentors.mockResolvedValue([
         { userId: 'U123' },
         { userId: 'U456' }
-      ];
-      mockFirestoreService.getAvailableMentors.mockResolvedValue(availableMentors);
+      ]);
 
       const result = await generateMentionText('技術的な問題');
 
       expect(result).toBe('🔔 **技術的な問題** の質問です\n<@U123> <@U456>');
-      expect(mockFirestoreService.getAvailableMentors).toHaveBeenCalledTimes(1);
+      expect(__mockInstance.getAvailableMentors).toHaveBeenCalledTimes(1);
     });
 
     it('should fallback to all mentors when no available mentors', async () => {
@@ -75,19 +79,19 @@ describe('mentorUtils', () => {
         { userId: 'U123' },
         { userId: 'U456' }
       ];
-      mockFirestoreService.getAvailableMentors.mockResolvedValue([]);
-      mockFirestoreService.getAllMentors.mockResolvedValue(allMentors);
+      __mockInstance.getAvailableMentors.mockResolvedValue([]);
+      __mockInstance.getAllMentors.mockResolvedValue(allMentors);
 
       const result = await generateMentionText('技術的な問題');
 
       expect(result).toBe('🔔 新しい質問です\n<@U123> <@U456>');
-      expect(mockFirestoreService.getAvailableMentors).toHaveBeenCalledTimes(1);
-      expect(mockFirestoreService.getAllMentors).toHaveBeenCalledTimes(1);
+      expect(__mockInstance.getAvailableMentors).toHaveBeenCalledTimes(1);
+      expect(__mockInstance.getAllMentors).toHaveBeenCalledTimes(1);
     });
 
     it('should handle no mentors at all', async () => {
-      mockFirestoreService.getAvailableMentors.mockResolvedValue([]);
-      mockFirestoreService.getAllMentors.mockResolvedValue([]);
+      __mockInstance.getAvailableMentors.mockResolvedValue([]);
+      __mockInstance.getAllMentors.mockResolvedValue([]);
 
       const result = await generateMentionText('技術的な問題');
 
@@ -95,7 +99,7 @@ describe('mentorUtils', () => {
     });
 
     it('should handle firestore errors', async () => {
-      mockFirestoreService.getAvailableMentors.mockRejectedValue(new Error('Database error'));
+      __mockInstance.getAvailableMentors.mockRejectedValue(new Error('Database error'));
 
       const result = await generateMentionText('技術的な問題');
 

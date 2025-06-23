@@ -190,7 +190,10 @@ describe('FirestoreService', () => {
 
       expect(mockFirestore.collection).toHaveBeenCalledWith('mentors');
       expect(mockCollection.get).toHaveBeenCalled();
-      expect(result).toEqual(mentorsData);
+      expect(result).toEqual([
+        { id: 'mentor0', userId: 'U123', name: 'メンター1' },
+        { id: 'mentor1', userId: 'U456', name: 'メンター2' }
+      ]);
     });
 
     it('should return empty array when no mentors', async () => {
@@ -222,7 +225,9 @@ describe('FirestoreService', () => {
       expect(mockFirestore.collection).toHaveBeenCalledWith('mentors');
       expect(mockCollection.where).toHaveBeenCalledWith('availability', '==', 'available');
       expect(mockCollection.get).toHaveBeenCalled();
-      expect(result).toEqual(availableMentors);
+      expect(result).toEqual([
+        { id: 'mentor0', userId: 'U123', name: 'メンター1', availability: 'available' }
+      ]);
     });
   });
 

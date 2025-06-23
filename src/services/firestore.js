@@ -226,6 +226,34 @@ export class FirestoreService {
     }
   }
 
+  async createMentor(mentorData) {
+    try {
+      const { userId, ...data } = mentorData;
+      await this.db.collection('mentors').doc(userId).set({
+        ...data,
+        userId,
+        registeredAt: data.registeredAt || new Date(),
+        updatedAt: data.updatedAt || new Date(),
+      });
+      return userId;
+    } catch (error) {
+      console.error('Error creating mentor:', error);
+      throw error;
+    }
+  }
+
+  async updateMentor(userId, updateData) {
+    try {
+      await this.db.collection('mentors').doc(userId).update({
+        ...updateData,
+        updatedAt: new Date(),
+      });
+    } catch (error) {
+      console.error('Error updating mentor:', error);
+      throw error;
+    }
+  }
+
   async deleteMentor(userId) {
     try {
       await this.db.collection('mentors').doc(userId).delete();
