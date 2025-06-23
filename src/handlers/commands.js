@@ -1,7 +1,7 @@
 import { createQuestionModal, createMentorRegistrationModal } from '../utils/modal.js';
 import { createCategorySelectionModal } from '../utils/template.js';
 import { createQuestionTypeSelectionModal } from '../utils/questionType.js';
-import { createScheduleModal, formatMentorStatus } from '../utils/schedule.js';
+import { createStatusModal, formatMentorStatus } from '../utils/schedule.js';
 import { FirestoreService } from '../services/firestore.js';
 
 const firestoreService = new FirestoreService();
@@ -39,7 +39,7 @@ export const handleMentorStatusCommand = async ({ ack, body, client }) => {
     // ステータス変更モーダルを直接表示
     await client.views.open({
       trigger_id: body.trigger_id,
-      view: createScheduleModal(),
+      view: createStatusModal(),
     });
   } catch (error) {
     console.error('Error handling mentor status command:', error);
