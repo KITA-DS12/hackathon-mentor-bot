@@ -94,9 +94,16 @@ export const handleReservationModalSubmission = async ({
       autoResolveCheck,
     };
 
-    await firestoreService.createQuestion(updatedQuestionData);
+    const questionId =
+      await firestoreService.createQuestion(updatedQuestionData);
 
-    // TODO: 予約時間に基づいてスケジューリング機能を実装
+    // スケジューラーサービスの取得
+    const { getSchedulerService } = await import('./reservation.js');
+    const schedulerService = getSchedulerService();
+
+    if (schedulerService) {
+      schedulerService.scheduleQuestion(questionId, updatedQuestionData);
+    }
 
     await client.chat.postMessage({
       channel: body.user.id,

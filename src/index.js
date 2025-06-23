@@ -20,6 +20,11 @@ import {
   handleStatusModalSubmission,
   handleChangeStatusAction,
 } from './handlers/schedule.js';
+import {
+  initializeScheduler,
+  handleMarkResolvedAction,
+  handleSendToMentorAction,
+} from './handlers/reservation.js';
 
 const app = new App({
   token: config.slack.botToken,
@@ -44,6 +49,8 @@ app.action('check_details', handleCheckDetails);
 app.action('pause_response', handlePauseResponse);
 app.action('complete_response', handleCompleteResponse);
 app.action('change_status', handleChangeStatusAction);
+app.action('mark_resolved', handleMarkResolvedAction);
+app.action('send_to_mentor', handleSendToMentorAction);
 
 // Error handling
 app.error((error) => {
@@ -53,6 +60,10 @@ app.error((error) => {
 (async () => {
   try {
     await app.start();
+
+    // スケジューラーサービスを初期化
+    initializeScheduler(app.client);
+
     console.log('⚡️ Hackathon Mentor Bot is running!');
     console.log(`🚀 Port: ${config.app.port}`);
     console.log(`📡 Mentor Channel ID: ${config.app.mentorChannelId}`);
