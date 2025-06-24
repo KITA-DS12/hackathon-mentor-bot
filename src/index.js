@@ -8,6 +8,7 @@ import {
   handleMentorListCommand,
   handleMentorQuestionsCommand,
   handleMentorUnregisterCommand,
+  handleMentorHealthCommand,
 } from './handlers/commands.js';
 import {
   handleCategorySelectionSubmission,
@@ -92,6 +93,7 @@ app.command('/mentor-register', handleMentorRegisterCommand);
 app.command('/mentor-list', handleMentorListCommand);
 app.command('/mentor-questions', handleMentorQuestionsCommand);
 app.command('/mentor-unregister', handleMentorUnregisterCommand);
+app.command('/mentor-health', handleMentorHealthCommand);
 
 // Modal Submissions
 app.view('question_modal', handleQuestionModalSubmission);

@@ -6,8 +6,10 @@ import { FirestoreService } from '../services/firestore.js';
 import { sendEphemeralMessage, openModal } from '../utils/slackUtils.js';
 import { withErrorHandling, ERROR_MESSAGES } from '../utils/errorHandler.js';
 import { createQuestionMessage } from '../utils/message.js';
+import { HealthCheckService } from '../utils/healthCheck.js';
 
 const firestoreService = new FirestoreService();
+const healthCheckService = new HealthCheckService();
 
 export const handleMentorHelpCommand = withErrorHandling(
   async ({ ack, body, client }) => {
@@ -309,3 +311,64 @@ export const handleMentorUnregisterCommand = async ({ ack, body, client }) => {
     });
   }
 };
+
+export const handleMentorHealthCommand = withErrorHandling(
+  async ({ ack, body, client }) => {
+    await ack();
+    
+    console.log('Health check command executed by:', body.user_id);
+    
+    try {
+      // ローカルヘルスチェックを実行
+      const healthResult = await healthCheckService.performLocalHealthCheck();
+      
+      if (healthResult.success) {
+        const { data } = healthResult;
+        const uptimeSeconds = Math.round(data.uptime / 1000);
+        const uptimeMinutes = Math.round(uptimeSeconds / 60);
+        const uptimeDisplay = uptimeMinutes > 0 ? `${uptimeMinutes}分` : `${uptimeSeconds}秒`;
+        
+        const healthMessage = `🟢 **システム状態: 正常**\n\n` +
+          `📊 **システム情報:**\n` +
+          `• 稼働時間: ${uptimeDisplay}\n` +
+          `• メモリ使用量: ${data.memory.heapUsed}MB / ${data.memory.heapTotal}MB\n` +
+          `• CPU応答時間: ${data.cpuResponseTime.toFixed(2)}ms\n` +
+          `• ウォームアップ状態: ${data.isWarmedUp ? '✅ 完了' : '⏳ 準備中'}\n\n` +
+          `⏰ 最終チェック: <!date^${Math.floor(data.timestamp / 1000)}^{time}|${new Date(data.timestamp).toLocaleTimeString()}>`;
+        
+        await sendEphemeralMessage(
+          client,
+          body.channel_id,
+          body.user_id,
+          healthMessage
+        );
+      } else {
+        await sendEphemeralMessage(
+          client,
+          body.channel_id,
+          body.user_id,
+          `🔴 **システム状態: 異常**\n\n` +
+          `❌ ヘルスチェックに失敗しました。\n` +
+          `エラー: ${healthResult.error}\n\n` +
+          `管理者に連絡してください。`
+        );
+      }
+    } catch (error) {
+      console.error('Health check command error:', error);
+      await sendEphemeralMessage(
+        client,
+        body.channel_id,
+        body.user_id,
+        `🔴 **システム状態: 不明**\n\n` +
+        `❌ ヘルスチェックの実行中にエラーが発生しました。\n` +
+        `管理者に連絡してください。`
+      );
+    }
+  },
+  (args) => ({ 
+    client: args[0].client, 
+    userId: args[0].body.user_id, 
+    channelId: args[0].body.channel_id 
+  }),
+  'システム状態の確認中にエラーが発生しました。'
+);
