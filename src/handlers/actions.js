@@ -65,7 +65,7 @@ export const handleStartResponse = withErrorHandling(
       threadTs: threadResult.ts,
     });
 
-    // メンターチャンネルでステータス更新を通知
+    // メンターチャンネルのスレッドでステータス更新を通知
     const statusMessage = createStatusUpdateMessage(
       { ...question, status: QUESTION_STATUS.IN_PROGRESS },
       questionId,
@@ -74,6 +74,7 @@ export const handleStartResponse = withErrorHandling(
 
     await client.chat.postMessage({
       channel: body.channel.id,
+      thread_ts: body.message.ts,
       ...statusMessage,
     });
 
@@ -172,6 +173,7 @@ export const handlePauseResponse = withErrorHandling(
 
     await client.chat.postMessage({
       channel: body.channel.id,
+      thread_ts: body.message.ts,
       ...statusMessage,
     });
 
@@ -254,6 +256,7 @@ export const handleResumeResponse = withErrorHandling(
 
     await client.chat.postMessage({
       channel: body.channel.id,
+      thread_ts: body.message.ts,
       ...statusMessage,
     });
 
@@ -347,6 +350,7 @@ export const handleReleaseAssignment = withErrorHandling(
 
     await client.chat.postMessage({
       channel: body.channel.id,
+      thread_ts: body.message.ts,
       ...statusMessage,
     });
 
@@ -393,6 +397,7 @@ export const handleCompleteResponse = withErrorHandling(
 
     await client.chat.postMessage({
       channel: body.channel.id,
+      thread_ts: body.message.ts,
       ...statusMessage,
     });
 

@@ -1,4 +1,5 @@
 import { STATUS_EMOJI } from '../config/constants.js';
+import { config } from '../config/index.js';
 
 /**
  * タイムスタンプを安全にフォーマットする
@@ -157,7 +158,7 @@ export const createQuestionMessage = (question, questionId) => {
         elements: [
           {
             type: 'mrkdwn',
-            text: `質問ID: ${questionId} | 作成: ${formatTimestamp(question.createdAt)}`,
+            text: `質問ID: ${questionId} | 作成: ${formatTimestamp(question.createdAt)}${question.threadTs ? ` | <https://slack.com/app_redirect?channel=${config.app.mentorChannelId}&message_ts=${question.threadTs}|スレッドリンク>` : ''}`,
           },
         ],
       },
@@ -200,7 +201,7 @@ export const createStatusUpdateMessage = (
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `${statusEmoji} *ステータス更新*\n質問ID: ${questionId}\n新しいステータス: ${statusText}`,
+          text: `${statusEmoji} *ステータス更新*\n質問ID: ${questionId}\n新しいステータス: ${statusText}${question.threadTs ? `\n<https://slack.com/app_redirect?channel=${config.app.mentorChannelId}&message_ts=${question.threadTs}|スレッドリンク>` : ''}`,
         },
       },
     ],

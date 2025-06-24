@@ -153,65 +153,82 @@ export const handleMentorQuestionsCommand = withErrorHandling(
 
     // 問題のある質問があれば警告表示
     if (problemQuestions.length > 0) {
-      await client.chat.postMessage({
-        channel: body.channel_id,
-        text: `⚠️ *要注意の質問* (${problemQuestions.length}件)\n` +
-              problemQuestions.map(q => {
-                const issues = [];
-                if (q.assignedMentors && q.assignedMentors.some(mentorId => !mentorIds.has(mentorId))) {
-                  issues.push('担当者不在');
-                }
-                const questionDate = new Date(q.createdAt.seconds ? q.createdAt.seconds * 1000 : q.createdAt);
-                if (questionDate < oneDayAgo) {
-                  issues.push('24時間以上経過');
-                }
-                return `• ${q.category} - <@${q.userId}> (${issues.join('・')})`;
-              }).join('\n'),
-      });
+      await sendEphemeralMessage(
+        client,
+        body.channel_id,
+        body.user_id,
+        `⚠️ *要注意の質問* (${problemQuestions.length}件)\n` +
+        problemQuestions.map(q => {
+          const issues = [];
+          if (q.assignedMentors && q.assignedMentors.some(mentorId => !mentorIds.has(mentorId))) {
+            issues.push('担当者不在');
+          }
+          const questionDate = new Date(q.createdAt.seconds ? q.createdAt.seconds * 1000 : q.createdAt);
+          if (questionDate < oneDayAgo) {
+            issues.push('24時間以上経過');
+          }
+          return `• ${q.category} - <@${q.userId}> (${issues.join('・')})`;
+        }).join('\n')
+      );
     }
 
     // 待機中の質問
     if (waitingQuestions.length > 0) {
-      await client.chat.postMessage({
-        channel: body.channel_id,
-        text: `🟡 *待機中の質問* (${waitingQuestions.length}件)`,
-      });
+      await sendEphemeralMessage(
+        client,
+        body.channel_id,
+        body.user_id,
+        `🟡 *待機中の質問* (${waitingQuestions.length}件)`
+      );
       for (const question of waitingQuestions) {
         const message = createQuestionMessage(question, question.id);
-        await client.chat.postMessage({
-          channel: body.channel_id,
-          ...message,
-        });
+        await sendEphemeralMessage(
+          client,
+          body.channel_id,
+          body.user_id,
+          message.text,
+          message.blocks
+        );
       }
     }
 
     // 中断中の質問
     if (pausedQuestions.length > 0) {
-      await client.chat.postMessage({
-        channel: body.channel_id,
-        text: `🟠 *中断中の質問* (${pausedQuestions.length}件)`,
-      });
+      await sendEphemeralMessage(
+        client,
+        body.channel_id,
+        body.user_id,
+        `🟠 *中断中の質問* (${pausedQuestions.length}件)`
+      );
       for (const question of pausedQuestions) {
         const message = createQuestionMessage(question, question.id);
-        await client.chat.postMessage({
-          channel: body.channel_id,
-          ...message,
-        });
+        await sendEphemeralMessage(
+          client,
+          body.channel_id,
+          body.user_id,
+          message.text,
+          message.blocks
+        );
       }
     }
 
     // 対応中の質問（詳細表示）
     if (inProgressQuestions.length > 0) {
-      await client.chat.postMessage({
-        channel: body.channel_id,
-        text: `🔵 *対応中の質問* (${inProgressQuestions.length}件)`,
-      });
+      await sendEphemeralMessage(
+        client,
+        body.channel_id,
+        body.user_id,
+        `🔵 *対応中の質問* (${inProgressQuestions.length}件)`
+      );
       for (const question of inProgressQuestions) {
         const message = createQuestionMessage(question, question.id);
-        await client.chat.postMessage({
-          channel: body.channel_id,
-          ...message,
-        });
+        await sendEphemeralMessage(
+          client,
+          body.channel_id,
+          body.user_id,
+          message.text,
+          message.blocks
+        );
       }
     }
   },
