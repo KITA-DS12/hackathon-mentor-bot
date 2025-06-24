@@ -2,15 +2,17 @@ import { FirestoreService } from '../services/firestore.js';
 import {
   createStatusUpdateMessage,
   createThreadInviteMessage,
+  formatTimestamp,
 } from '../utils/message.js';
 import { QUESTION_STATUS } from '../config/constants.js';
+import { withErrorHandling, ERROR_MESSAGES } from '../utils/errorHandler.js';
 
 const firestoreService = new FirestoreService();
 
-export const handleStartResponse = async ({ ack, body, client }) => {
-  await ack();
+export const handleStartResponse = withErrorHandling(
+  async ({ ack, body, client }) => {
+    await ack();
 
-  try {
     const questionId = body.actions[0].value;
     const mentorId = body.user.id;
 
@@ -87,21 +89,19 @@ export const handleStartResponse = async ({ ack, body, client }) => {
     if (followUpService) {
       followUpService.cancelFollowUp(questionId);
     }
-  } catch (error) {
-    console.error('Error handling start response:', error);
+  },
+  (args) => ({ 
+    client: args[0].client, 
+    userId: args[0].body.user.id, 
+    channelId: args[0].body.channel.id 
+  }),
+  ERROR_MESSAGES.START_RESPONSE
+);
 
-    await client.chat.postEphemeral({
-      channel: body.channel.id,
-      user: body.user.id,
-      text: '対応開始の処理中にエラーが発生しました。',
-    });
-  }
-};
+export const handleCheckDetails = withErrorHandling(
+  async ({ ack, body, client }) => {
+    await ack();
 
-export const handleCheckDetails = async ({ ack, body, client }) => {
-  await ack();
-
-  try {
     const questionId = body.actions[0].value;
     const question = await firestoreService.getQuestion(questionId);
 
@@ -120,7 +120,7 @@ export const handleCheckDetails = async ({ ack, body, client }) => {
 カテゴリ: ${question.category}
 緊急度: ${question.urgency}
 相談方法: ${question.consultationType}
-作成日時: ${question.createdAt.toDate().toLocaleString()}
+作成日時: ${formatTimestamp(question.createdAt)}
 
 *質問内容:*
 ${question.content}
@@ -135,21 +135,19 @@ ${question.errorMessage ? `*エラーメッセージ:*\n\`\`\`${question.errorMe
       user: body.user.id,
       text: detailsText,
     });
-  } catch (error) {
-    console.error('Error handling check details:', error);
+  },
+  (args) => ({ 
+    client: args[0].client, 
+    userId: args[0].body.user.id, 
+    channelId: args[0].body.channel.id 
+  }),
+  ERROR_MESSAGES.CHECK_DETAILS
+);
 
-    await client.chat.postEphemeral({
-      channel: body.channel.id,
-      user: body.user.id,
-      text: '詳細確認の処理中にエラーが発生しました。',
-    });
-  }
-};
+export const handlePauseResponse = withErrorHandling(
+  async ({ ack, body, client }) => {
+    await ack();
 
-export const handlePauseResponse = async ({ ack, body, client }) => {
-  await ack();
-
-  try {
     const questionId = body.actions[0].value;
     const mentorId = body.user.id;
 
@@ -179,15 +177,19 @@ export const handlePauseResponse = async ({ ack, body, client }) => {
       channel: question.userId,
       text: `<@${mentorId}>が対応を一時中断しました。後ほど対応を再開します。`,
     });
-  } catch (error) {
-    console.error('Error handling pause response:', error);
-  }
-};
+  },
+  (args) => ({ 
+    client: args[0].client, 
+    userId: args[0].body.user.id, 
+    channelId: args[0].body.channel.id 
+  }),
+  ERROR_MESSAGES.PAUSE_RESPONSE
+);
 
-export const handleCompleteResponse = async ({ ack, body, client }) => {
-  await ack();
+export const handleCompleteResponse = withErrorHandling(
+  async ({ ack, body, client }) => {
+    await ack();
 
-  try {
     const questionId = body.actions[0].value;
     const mentorId = body.user.id;
 
@@ -225,7 +227,11 @@ export const handleCompleteResponse = async ({ ack, body, client }) => {
     if (followUpService) {
       followUpService.cancelFollowUp(questionId);
     }
-  } catch (error) {
-    console.error('Error handling complete response:', error);
-  }
-};
+  },
+  (args) => ({ 
+    client: args[0].client, 
+    userId: args[0].body.user.id, 
+    channelId: args[0].body.channel.id 
+  }),
+  ERROR_MESSAGES.COMPLETE_RESPONSE
+);

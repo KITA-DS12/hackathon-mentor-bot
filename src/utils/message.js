@@ -5,7 +5,7 @@ import { STATUS_EMOJI } from '../config/constants.js';
  * @param {Date|Object|undefined} timestamp - Dateオブジェクト、Firestore Timestamp、またはundefined
  * @returns {string} フォーマットされたタイムスタンプ文字列
  */
-const formatTimestamp = (timestamp) => {
+export const formatTimestamp = (timestamp) => {
   try {
     let date;
     

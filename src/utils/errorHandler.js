@@ -64,5 +64,9 @@ export const ERROR_MESSAGES = {
   STATUS_UPDATE: 'ステータス更新中にエラーが発生しました。もう一度お試しください。',
   QUESTION_TYPE_SELECTION: '質問方法の選択中にエラーが発生しました。もう一度お試しください。',
   MENTOR_LIST_FETCH: 'メンター一覧の取得中にエラーが発生しました。',
+  START_RESPONSE: '対応開始の処理中にエラーが発生しました。',
+  CHECK_DETAILS: '詳細確認の処理中にエラーが発生しました。',
+  PAUSE_RESPONSE: '対応中断の処理中にエラーが発生しました。',
+  COMPLETE_RESPONSE: '対応完了の処理中にエラーが発生しました。',
   GENERIC: '処理中にエラーが発生しました。もう一度お試しください。'
 };
