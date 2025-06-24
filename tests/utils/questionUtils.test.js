@@ -55,7 +55,7 @@ describe('questionUtils', () => {
       const result = extractQuestionData(values, userId);
 
       expect(result.category).toBe('技術的な問題');
-      expect(result.urgency).toBe('🟡普通');
+      expect(result.urgency).toBe('🟡急ぎ（今日明日中に解決したい）');
       expect(result.consultationType).toBe('Slackで相談');
       expect(result.currentSituation).toBe('');
       expect(result.relatedLinks).toBe('');

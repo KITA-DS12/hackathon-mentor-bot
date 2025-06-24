@@ -6,9 +6,9 @@ export const QUESTION_STATUS = {
 };
 
 export const URGENCY_LEVELS = {
-  HIGH: '🔴至急',
-  MEDIUM: '🟡普通',
-  LOW: '🟢低め',
+  HIGH: '🔴緊急（他の開発が止まっている）',
+  MEDIUM: '🟡急ぎ（今日明日中に解決したい）',
+  LOW: '🟢いつでも（時間のある時で大丈夫）',
 };
 
 export const CATEGORIES = {
