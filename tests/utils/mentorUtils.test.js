@@ -42,18 +42,6 @@ describe('mentorUtils', () => {
       expect(result).toBe('<@U123> <@U456> <@U789>');
     });
 
-    it('should limit mentions to maxMentions', () => {
-      const mentors = [
-        { userId: 'U123' },
-        { userId: 'U456' },
-        { userId: 'U789' }
-      ];
-
-      const result = createMentionString(mentors, 2);
-
-      expect(result).toBe('<@U123> <@U456>');
-    });
-
     it('should handle empty mentors list', () => {
       const result = createMentionString([]);
 
@@ -62,35 +50,19 @@ describe('mentorUtils', () => {
   });
 
   describe('generateMentionText', () => {
-    it('should generate mention text with available mentors', async () => {
-      __mockInstance.getAvailableMentors.mockResolvedValue([
+    it('should generate mention text with all mentors', async () => {
+      __mockInstance.getAllMentors.mockResolvedValue([
         { userId: 'U123' },
         { userId: 'U456' }
       ]);
 
       const result = await generateMentionText('技術的な問題');
 
-      expect(result).toBe('🔔 **技術的な問題** の質問です\n<@U123> <@U456>');
-      expect(__mockInstance.getAvailableMentors).toHaveBeenCalledTimes(1);
-    });
-
-    it('should fallback to all mentors when no available mentors', async () => {
-      const allMentors = [
-        { userId: 'U123' },
-        { userId: 'U456' }
-      ];
-      __mockInstance.getAvailableMentors.mockResolvedValue([]);
-      __mockInstance.getAllMentors.mockResolvedValue(allMentors);
-
-      const result = await generateMentionText('技術的な問題');
-
-      expect(result).toBe('🔔 新しい質問です\n<@U123> <@U456>');
-      expect(__mockInstance.getAvailableMentors).toHaveBeenCalledTimes(1);
+      expect(result).toBe('🔔 *技術的な問題* の質問です\n<@U123> <@U456>');
       expect(__mockInstance.getAllMentors).toHaveBeenCalledTimes(1);
     });
 
     it('should handle no mentors at all', async () => {
-      __mockInstance.getAvailableMentors.mockResolvedValue([]);
       __mockInstance.getAllMentors.mockResolvedValue([]);
 
       const result = await generateMentionText('技術的な問題');
@@ -99,7 +71,7 @@ describe('mentorUtils', () => {
     });
 
     it('should handle firestore errors', async () => {
-      __mockInstance.getAvailableMentors.mockRejectedValue(new Error('Database error'));
+      __mockInstance.getAllMentors.mockRejectedValue(new Error('Database error'));
 
       const result = await generateMentionText('技術的な問題');
 
