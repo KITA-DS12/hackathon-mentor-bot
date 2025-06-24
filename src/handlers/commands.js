@@ -141,11 +141,14 @@ export const handleMentorQuestionsCommand = withErrorHandling(
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    // 担当者不在・長期未完了の質問をチェック
+    // 担当者不在・長期未完了の質問をチェック（複数メンター対応）
     const problemQuestions = [...pausedQuestions, ...inProgressQuestions].filter(q => {
-      const hasInvalidMentor = q.assignedMentor && !mentorIds.has(q.assignedMentor);
+      // 担当メンターが存在しない、または全員が登録済みメンターでない
+      const hasInvalidMentors = q.assignedMentors && q.assignedMentors.length > 0 
+        ? q.assignedMentors.some(mentorId => !mentorIds.has(mentorId))
+        : false;
       const isOld = q.createdAt && new Date(q.createdAt.seconds ? q.createdAt.seconds * 1000 : q.createdAt) < oneDayAgo;
-      return hasInvalidMentor || isOld;
+      return hasInvalidMentors || isOld;
     });
 
     // 問題のある質問があれば警告表示
@@ -155,7 +158,7 @@ export const handleMentorQuestionsCommand = withErrorHandling(
         text: `⚠️ *要注意の質問* (${problemQuestions.length}件)\n` +
               problemQuestions.map(q => {
                 const issues = [];
-                if (q.assignedMentor && !mentorIds.has(q.assignedMentor)) {
+                if (q.assignedMentors && q.assignedMentors.some(mentorId => !mentorIds.has(mentorId))) {
                   issues.push('担当者不在');
                 }
                 const questionDate = new Date(q.createdAt.seconds ? q.createdAt.seconds * 1000 : q.createdAt);

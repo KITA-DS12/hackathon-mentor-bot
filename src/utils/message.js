@@ -178,7 +178,13 @@ export const createStatusUpdateMessage = (
       statusText = '対応待ち';
       break;
     case 'in_progress':
-      statusText = `対応中 (担当: <@${mentor}>)`;
+      // 複数メンター対応
+      if (question.assignedMentors && question.assignedMentors.length > 0) {
+        const mentorMentions = question.assignedMentors.map(id => `<@${id}>`).join(', ');
+        statusText = `対応中 (担当: ${mentorMentions})`;
+      } else {
+        statusText = `対応中 (担当: <@${mentor}>)`;
+      }
       break;
     case 'paused':
       statusText = '中断中';

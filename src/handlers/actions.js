@@ -1,4 +1,4 @@
-import { FirestoreService } from '../services/firestore.js';
+import { FirestoreService, FieldValue } from '../services/firestore.js';
 import {
   createStatusUpdateMessage,
   createThreadInviteMessage,
@@ -37,10 +37,10 @@ export const handleStartResponse = withErrorHandling(
       return;
     }
 
-    // ステータスを更新
+    // ステータスを更新（複数メンター対応）
     await firestoreService.updateQuestion(questionId, {
       status: QUESTION_STATUS.IN_PROGRESS,
-      assignedMentor: mentorId,
+      assignedMentors: FieldValue.arrayUnion(mentorId),
     });
 
     await firestoreService.addStatusHistory(
@@ -226,20 +226,19 @@ export const handleResumeResponse = withErrorHandling(
       return;
     }
 
-    // 元の担当メンターかチェック（任意の実装）
-    if (question.assignedMentor && question.assignedMentor !== mentorId) {
-      await client.chat.postEphemeral({
-        channel: body.channel.id,
-        user: body.user.id,
-        text: `この質問は<@${question.assignedMentor}>が担当中です。`,
+    // 複数メンター対応：既に担当者リストに含まれているかチェック
+    if (question.assignedMentors && !question.assignedMentors.includes(mentorId)) {
+      // 新しいメンターとして追加
+      await firestoreService.updateQuestion(questionId, {
+        status: QUESTION_STATUS.IN_PROGRESS,
+        assignedMentors: FieldValue.arrayUnion(mentorId),
       });
-      return;
+    } else {
+      // 既存の担当メンターが再開
+      await firestoreService.updateQuestion(questionId, {
+        status: QUESTION_STATUS.IN_PROGRESS,
+      });
     }
-
-    await firestoreService.updateQuestion(questionId, {
-      status: QUESTION_STATUS.IN_PROGRESS,
-      assignedMentor: mentorId,
-    });
 
     await firestoreService.addStatusHistory(
       questionId,
@@ -300,7 +299,7 @@ export const handleReleaseAssignment = withErrorHandling(
     }
 
     // 担当者の確認（担当者本人のみ解除可能）
-    if (question.assignedMentor !== mentorId) {
+    if (!question.assignedMentors || !question.assignedMentors.includes(mentorId)) {
       await client.chat.postEphemeral({
         channel: body.channel.id,
         user: body.user.id,
@@ -319,20 +318,29 @@ export const handleReleaseAssignment = withErrorHandling(
       return;
     }
 
-    // 担当を解除して待機中に戻す
-    await firestoreService.updateQuestion(questionId, {
-      status: QUESTION_STATUS.WAITING,
-      assignedMentor: null,
-    });
+    // 担当メンターから自分を削除
+    const updateData = {
+      assignedMentors: FieldValue.arrayRemove(mentorId),
+    };
 
+    // 担当メンターが0人になる場合は待機中に戻す
+    const remainingMentors = question.assignedMentors.filter(id => id !== mentorId);
+    if (remainingMentors.length === 0) {
+      updateData.status = QUESTION_STATUS.WAITING;
+    }
+
+    await firestoreService.updateQuestion(questionId, updateData);
+
+    const newStatus = remainingMentors.length === 0 ? QUESTION_STATUS.WAITING : question.status;
+    
     await firestoreService.addStatusHistory(
       questionId,
-      QUESTION_STATUS.WAITING,
+      newStatus,
       mentorId
     );
 
     const statusMessage = createStatusUpdateMessage(
-      { ...question, status: QUESTION_STATUS.WAITING },
+      { ...question, status: newStatus, assignedMentors: remainingMentors },
       questionId,
       mentorId
     );
@@ -342,9 +350,13 @@ export const handleReleaseAssignment = withErrorHandling(
       ...statusMessage,
     });
 
+    const notificationText = remainingMentors.length === 0 
+      ? `<@${mentorId}>が担当を解除しました。他のメンターが対応可能になりました。`
+      : `<@${mentorId}>が担当を解除しました。引き続き他のメンターが対応中です。`;
+    
     await client.chat.postMessage({
       channel: question.userId,
-      text: `<@${mentorId}>が担当を解除しました。他のメンターが対応可能になりました。`,
+      text: notificationText,
     });
   },
   (args) => ({ 

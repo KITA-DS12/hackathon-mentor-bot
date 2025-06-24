@@ -1,6 +1,8 @@
 import { Firestore, FieldValue } from '@google-cloud/firestore';
 import { config } from '../config/index.js';
 
+export { FieldValue };
+
 export class FirestoreService {
   constructor() {
     this.db = new Firestore({
@@ -105,7 +107,7 @@ export class FirestoreService {
     try {
       let query = this.db
         .collection('questions')
-        .where('assignedMentor', '==', mentorId)
+        .where('assignedMentors', 'array-contains', mentorId)
         .orderBy('createdAt', 'desc');
 
       if (status) {

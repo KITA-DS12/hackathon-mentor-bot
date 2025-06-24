@@ -22,6 +22,7 @@ export const extractQuestionData = (values, userId) => {
     relatedLinks: values.related_links?.related_links?.value || '',
     errorMessage: values.error_message?.error_message?.value || '',
     status: QUESTION_STATUS.WAITING,
+    assignedMentors: [], // 複数メンター対応のため配列に変更
     createdAt: now,
     updatedAt: now,
     statusHistory: [
