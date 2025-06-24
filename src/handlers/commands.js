@@ -94,14 +94,30 @@ export const handleMentorListCommand = withErrorHandling(
 
 export const handleMentorQuestionsCommand = withErrorHandling(
   async ({ ack, body, client }) => {
-    await ack();
+    await ack('🔍 質問一覧を取得しています...');
     
     console.log('mentor-questions command executed by:', body.user_id);
     
-    const waitingQuestions = await firestoreService.getQuestionsByStatus('waiting');
-    const pausedQuestions = await firestoreService.getQuestionsByStatus('paused');
-    const inProgressQuestions = await firestoreService.getQuestionsByStatus('in_progress');
-    const allMentors = await firestoreService.getAllMentors();
+    // 非同期で質問一覧処理を実行
+    processQuestionsList(client, body.channel_id, body.user_id);
+  },
+  (args) => ({ 
+    client: args[0].client, 
+    userId: args[0].body.user_id, 
+    channelId: args[0].body.channel_id 
+  }),
+  '質問一覧の取得中にエラーが発生しました。'
+);
+
+// 質問一覧処理を非同期化
+const processQuestionsList = async (client, channelId, userId) => {
+  try {
+    const [waitingQuestions, pausedQuestions, inProgressQuestions, allMentors] = await Promise.all([
+      firestoreService.getQuestionsByStatus('waiting'),
+      firestoreService.getQuestionsByStatus('paused'),
+      firestoreService.getQuestionsByStatus('in_progress'),
+      firestoreService.getAllMentors()
+    ]);
     
     console.log('Questions found:', {
       waiting: waitingQuestions.length,
@@ -113,8 +129,8 @@ export const handleMentorQuestionsCommand = withErrorHandling(
     if (waitingQuestions.length === 0 && pausedQuestions.length === 0 && inProgressQuestions.length === 0) {
       await sendEphemeralMessage(
         client, 
-        body.channel_id, 
-        body.user_id, 
+        channelId, 
+        userId, 
         '📋 現在対応可能な質問はありません。'
       );
       return;
@@ -141,8 +157,8 @@ export const handleMentorQuestionsCommand = withErrorHandling(
     if (problemQuestions.length > 0) {
       await sendEphemeralMessage(
         client,
-        body.channel_id,
-        body.user_id,
+        channelId,
+        userId,
         `⚠️ *要注意の質問* (${problemQuestions.length}件)\n` +
         problemQuestions.map(q => {
           const issues = [];
@@ -162,16 +178,16 @@ export const handleMentorQuestionsCommand = withErrorHandling(
     if (waitingQuestions.length > 0) {
       await sendEphemeralMessage(
         client,
-        body.channel_id,
-        body.user_id,
+        channelId,
+        userId,
         `🟡 *待機中の質問* (${waitingQuestions.length}件)`
       );
       for (const question of waitingQuestions) {
         const message = createQuestionMessage(question, question.id);
         await sendEphemeralMessage(
           client,
-          body.channel_id,
-          body.user_id,
+          channelId,
+          userId,
           message.text,
           message.blocks
         );
@@ -182,16 +198,16 @@ export const handleMentorQuestionsCommand = withErrorHandling(
     if (pausedQuestions.length > 0) {
       await sendEphemeralMessage(
         client,
-        body.channel_id,
-        body.user_id,
+        channelId,
+        userId,
         `🟠 *中断中の質問* (${pausedQuestions.length}件)`
       );
       for (const question of pausedQuestions) {
         const message = createQuestionMessage(question, question.id);
         await sendEphemeralMessage(
           client,
-          body.channel_id,
-          body.user_id,
+          channelId,
+          userId,
           message.text,
           message.blocks
         );
@@ -202,29 +218,31 @@ export const handleMentorQuestionsCommand = withErrorHandling(
     if (inProgressQuestions.length > 0) {
       await sendEphemeralMessage(
         client,
-        body.channel_id,
-        body.user_id,
+        channelId,
+        userId,
         `🔵 *対応中の質問* (${inProgressQuestions.length}件)`
       );
       for (const question of inProgressQuestions) {
         const message = createQuestionMessage(question, question.id);
         await sendEphemeralMessage(
           client,
-          body.channel_id,
-          body.user_id,
+          channelId,
+          userId,
           message.text,
           message.blocks
         );
       }
     }
-  },
-  (args) => ({ 
-    client: args[0].client, 
-    userId: args[0].body.user_id, 
-    channelId: args[0].body.channel_id 
-  }),
-  '質問一覧の取得中にエラーが発生しました。'
-);
+  } catch (error) {
+    console.error('Error processing questions list:', error);
+    await sendEphemeralMessage(
+      client,
+      channelId,
+      userId,
+      '質問一覧の取得中にエラーが発生しました。'
+    );
+  }
+};
 
 export const handleMentorUnregisterCommand = async ({ ack, body, client }) => {
   await ack();

@@ -90,6 +90,7 @@ app.receiver.router.get('/health', (req, res) => {
   res.status(200).json(healthData);
 });
 
+
 // Slash Commands
 app.command('/mentor-help', handleMentorHelpCommand);
 app.command('/mentor-status', handleMentorStatusCommand);
@@ -140,6 +141,7 @@ app.error((error) => {
 
       // フォローアップサービスを初期化
       initializeFollowUp(app.client);
+      
       
       console.log('🎉 Hackathon Mentor Bot is fully initialized!');
     } else {
