@@ -110,10 +110,19 @@ export const handleMentorQuestionsCommand = withErrorHandling(
   async ({ ack, body, client }) => {
     await ack();
     
+    console.log('mentor-questions command executed by:', body.user_id);
+    
     const waitingQuestions = await firestoreService.getQuestionsByStatus('waiting');
     const pausedQuestions = await firestoreService.getQuestionsByStatus('paused');
     const inProgressQuestions = await firestoreService.getQuestionsByStatus('in_progress');
     const allMentors = await firestoreService.getAllMentors();
+    
+    console.log('Questions found:', {
+      waiting: waitingQuestions.length,
+      paused: pausedQuestions.length,
+      inProgress: inProgressQuestions.length,
+      mentors: allMentors.length
+    });
     
     if (waitingQuestions.length === 0 && pausedQuestions.length === 0 && inProgressQuestions.length === 0) {
       await sendEphemeralMessage(
@@ -203,7 +212,11 @@ export const handleMentorQuestionsCommand = withErrorHandling(
       }
     }
   },
-  { client: null, userId: null, channelId: null },
+  (args) => ({ 
+    client: args[0].client, 
+    userId: args[0].body.user_id, 
+    channelId: args[0].body.channel_id 
+  }),
   '質問一覧の取得中にエラーが発生しました。'
 );
 

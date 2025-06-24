@@ -239,3 +239,72 @@ export const createThreadInviteMessage = (questionId, questionContent) => {
     ],
   };
 };
+
+export const createThreadStatusMessage = (questionId, status) => {
+  const blocks = [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `*対応状況が更新されました*`,
+      },
+    }
+  ];
+
+  // 状態に応じてボタンを追加
+  if (status === 'paused') {
+    blocks.push({
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: '対応再開',
+          },
+          style: 'primary',
+          action_id: 'resume_response',
+          value: questionId,
+        },
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: '完了',
+          },
+          style: 'primary',
+          action_id: 'complete_response',
+          value: questionId,
+        },
+      ],
+    });
+  } else if (status === 'in_progress') {
+    blocks.push({
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: '中断',
+          },
+          style: 'danger',
+          action_id: 'pause_response',
+          value: questionId,
+        },
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: '完了',
+          },
+          style: 'primary',
+          action_id: 'complete_response',
+          value: questionId,
+        },
+      ],
+    });
+  }
+
+  return { blocks };
+};

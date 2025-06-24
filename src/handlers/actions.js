@@ -2,6 +2,7 @@ import { FirestoreService } from '../services/firestore.js';
 import {
   createStatusUpdateMessage,
   createThreadInviteMessage,
+  createThreadStatusMessage,
   formatTimestamp,
 } from '../utils/message.js';
 import { QUESTION_STATUS } from '../config/constants.js';
@@ -177,6 +178,17 @@ export const handlePauseResponse = withErrorHandling(
       channel: question.userId,
       text: `<@${mentorId}>が対応を一時中断しました。後ほど対応を再開します。`,
     });
+
+    // スレッドに再開ボタン付きメッセージを投稿
+    if (question.threadTs) {
+      const threadMessage = createThreadStatusMessage(questionId, QUESTION_STATUS.PAUSED);
+      await client.chat.postMessage({
+        channel: body.channel.id,
+        thread_ts: question.threadTs,
+        text: '対応を一時中断しました。下のボタンから再開できます。',
+        ...threadMessage,
+      });
+    }
   },
   (args) => ({ 
     client: args[0].client, 
@@ -249,6 +261,17 @@ export const handleResumeResponse = withErrorHandling(
       channel: question.userId,
       text: `<@${mentorId}>があなたの質問への対応を再開しました。`,
     });
+
+    // スレッドに中断・完了ボタン付きメッセージを投稿
+    if (question.threadTs) {
+      const threadMessage = createThreadStatusMessage(questionId, QUESTION_STATUS.IN_PROGRESS);
+      await client.chat.postMessage({
+        channel: body.channel.id,
+        thread_ts: question.threadTs,
+        text: '対応を再開しました。',
+        ...threadMessage,
+      });
+    }
   },
   (args) => ({ 
     client: args[0].client, 
