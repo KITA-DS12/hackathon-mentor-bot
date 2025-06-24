@@ -113,6 +113,7 @@ export const handleMentorQuestionsCommand = withErrorHandling(
     const waitingQuestions = await firestoreService.getQuestionsByStatus('waiting');
     const pausedQuestions = await firestoreService.getQuestionsByStatus('paused');
     const inProgressQuestions = await firestoreService.getQuestionsByStatus('in_progress');
+    const allMentors = await firestoreService.getAllMentors();
     
     if (waitingQuestions.length === 0 && pausedQuestions.length === 0 && inProgressQuestions.length === 0) {
       await sendEphemeralMessage(
@@ -124,33 +125,82 @@ export const handleMentorQuestionsCommand = withErrorHandling(
       return;
     }
 
-    // 待機中の質問
-    for (const question of waitingQuestions) {
-      const message = createQuestionMessage(question, question.id);
+    // メンターIDのセットを作成（担当者不在チェック用）
+    const mentorIds = new Set(allMentors.map(m => m.userId));
+    
+    // 現在時刻を取得（長期未完了チェック用）
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // 担当者不在・長期未完了の質問をチェック
+    const problemQuestions = [...pausedQuestions, ...inProgressQuestions].filter(q => {
+      const hasInvalidMentor = q.assignedMentor && !mentorIds.has(q.assignedMentor);
+      const isOld = q.createdAt && new Date(q.createdAt.seconds ? q.createdAt.seconds * 1000 : q.createdAt) < oneDayAgo;
+      return hasInvalidMentor || isOld;
+    });
+
+    // 問題のある質問があれば警告表示
+    if (problemQuestions.length > 0) {
       await client.chat.postMessage({
         channel: body.channel_id,
-        ...message,
+        text: `⚠️ *要注意の質問* (${problemQuestions.length}件)\n` +
+              problemQuestions.map(q => {
+                const issues = [];
+                if (q.assignedMentor && !mentorIds.has(q.assignedMentor)) {
+                  issues.push('担当者不在');
+                }
+                const questionDate = new Date(q.createdAt.seconds ? q.createdAt.seconds * 1000 : q.createdAt);
+                if (questionDate < oneDayAgo) {
+                  issues.push('24時間以上経過');
+                }
+                return `• ${q.category} - <@${q.userId}> (${issues.join('・')})`;
+              }).join('\n'),
       });
+    }
+
+    // 待機中の質問
+    if (waitingQuestions.length > 0) {
+      await client.chat.postMessage({
+        channel: body.channel_id,
+        text: `🟡 *待機中の質問* (${waitingQuestions.length}件)`,
+      });
+      for (const question of waitingQuestions) {
+        const message = createQuestionMessage(question, question.id);
+        await client.chat.postMessage({
+          channel: body.channel_id,
+          ...message,
+        });
+      }
     }
 
     // 中断中の質問
-    for (const question of pausedQuestions) {
-      const message = createQuestionMessage(question, question.id);
+    if (pausedQuestions.length > 0) {
       await client.chat.postMessage({
         channel: body.channel_id,
-        ...message,
+        text: `🟠 *中断中の質問* (${pausedQuestions.length}件)`,
       });
+      for (const question of pausedQuestions) {
+        const message = createQuestionMessage(question, question.id);
+        await client.chat.postMessage({
+          channel: body.channel_id,
+          ...message,
+        });
+      }
     }
 
-    // 対応中の質問（参考情報として）
+    // 対応中の質問（詳細表示）
     if (inProgressQuestions.length > 0) {
       await client.chat.postMessage({
         channel: body.channel_id,
-        text: `📋 *対応中の質問* (${inProgressQuestions.length}件)\n` +
-              inProgressQuestions.map(q => 
-                `• ${q.category} - <@${q.userId}> (担当: <@${q.assignedMentor}>)`
-              ).join('\n'),
+        text: `🔵 *対応中の質問* (${inProgressQuestions.length}件)`,
       });
+      for (const question of inProgressQuestions) {
+        const message = createQuestionMessage(question, question.id);
+        await client.chat.postMessage({
+          channel: body.channel_id,
+          ...message,
+        });
+      }
     }
   },
   { client: null, userId: null, channelId: null },
