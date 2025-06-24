@@ -2,6 +2,7 @@
  * Slack API呼び出しのユーティリティ関数
  */
 import { config } from '../config/index.js';
+import { RetryUtils } from './retryUtils.js';
 
 /**
  * 質問をメンターチャンネルに投稿
@@ -10,10 +11,12 @@ import { config } from '../config/index.js';
  * @param {string} mentionText - メンション文
  */
 export const postQuestionToMentorChannel = async (client, questionMessage, mentionText) => {
-  return await client.chat.postMessage({
-    channel: config.app.mentorChannelId,
-    text: `${mentionText}\n\n${questionMessage.text}`,
-    blocks: questionMessage.blocks,
+  return RetryUtils.retrySlackOperation(async () => {
+    return await client.chat.postMessage({
+      channel: config.app.mentorChannelId,
+      text: `${mentionText}\n\n${questionMessage.text}`,
+      blocks: questionMessage.blocks,
+    });
   });
 };
 
@@ -24,9 +27,11 @@ export const postQuestionToMentorChannel = async (client, questionMessage, menti
  * @param {string} message - 送信メッセージ
  */
 export const sendUserConfirmation = async (client, userId, message) => {
-  return await client.chat.postMessage({
-    channel: userId,
-    text: message,
+  return RetryUtils.retrySlackOperation(async () => {
+    return await client.chat.postMessage({
+      channel: userId,
+      text: message,
+    });
   });
 };
 
@@ -39,17 +44,19 @@ export const sendUserConfirmation = async (client, userId, message) => {
  * @param {Array} blocks - Slackブロック（オプション）
  */
 export const sendEphemeralMessage = async (client, channelId, userId, text, blocks = null) => {
-  const payload = {
-    channel: channelId,
-    user: userId,
-    text,
-  };
-  
-  if (blocks) {
-    payload.blocks = blocks;
-  }
-  
-  return await client.chat.postEphemeral(payload);
+  return RetryUtils.retrySlackOperation(async () => {
+    const payload = {
+      channel: channelId,
+      user: userId,
+      text,
+    };
+    
+    if (blocks) {
+      payload.blocks = blocks;
+    }
+    
+    return await client.chat.postEphemeral(payload);
+  });
 };
 
 /**
@@ -60,16 +67,18 @@ export const sendEphemeralMessage = async (client, channelId, userId, text, bloc
  * @param {Object} metadata - プライベートメタデータ（オプション）
  */
 export const openModal = async (client, triggerId, view, metadata = null) => {
-  const payload = {
-    trigger_id: triggerId,
-    view,
-  };
-  
-  if (metadata) {
-    payload.view.private_metadata = JSON.stringify(metadata);
-  }
-  
-  return await client.views.open(payload);
+  return RetryUtils.retrySlackOperation(async () => {
+    const payload = {
+      trigger_id: triggerId,
+      view,
+    };
+    
+    if (metadata) {
+      payload.view.private_metadata = JSON.stringify(metadata);
+    }
+    
+    return await client.views.open(payload);
+  });
 };
 
 /**
@@ -81,15 +90,17 @@ export const openModal = async (client, triggerId, view, metadata = null) => {
  * @param {Array} blocks - 新しいブロック（オプション）
  */
 export const updateMessage = async (client, channelId, timestamp, text, blocks = null) => {
-  const payload = {
-    channel: channelId,
-    ts: timestamp,
-    text,
-  };
-  
-  if (blocks) {
-    payload.blocks = blocks;
-  }
-  
-  return await client.chat.update(payload);
+  return RetryUtils.retrySlackOperation(async () => {
+    const payload = {
+      channel: channelId,
+      ts: timestamp,
+      text,
+    };
+    
+    if (blocks) {
+      payload.blocks = blocks;
+    }
+    
+    return await client.chat.update(payload);
+  });
 };

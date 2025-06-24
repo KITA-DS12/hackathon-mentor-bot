@@ -1,5 +1,6 @@
 import { Firestore, FieldValue } from '@google-cloud/firestore';
 import { config } from '../config/index.js';
+import { RetryUtils } from '../utils/retryUtils.js';
 
 export { FieldValue };
 
@@ -11,17 +12,14 @@ export class FirestoreService {
   }
 
   async createQuestion(questionData) {
-    try {
+    return RetryUtils.retryFirestoreOperation(async () => {
       const docRef = await this.db.collection('questions').add({
         ...questionData,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
       return docRef.id;
-    } catch (error) {
-      console.error('Error creating question:', error);
-      throw error;
-    }
+    });
   }
 
   async getQuestion(questionId) {
@@ -38,7 +36,7 @@ export class FirestoreService {
   }
 
   async updateQuestion(questionId, updateData) {
-    try {
+    return RetryUtils.retryFirestoreOperation(async () => {
       await this.db
         .collection('questions')
         .doc(questionId)
@@ -46,14 +44,11 @@ export class FirestoreService {
           ...updateData,
           updatedAt: new Date(),
         });
-    } catch (error) {
-      console.error('Error updating question:', error);
-      throw error;
-    }
+    });
   }
 
   async addStatusHistory(questionId, status, userId) {
-    try {
+    return RetryUtils.retryFirestoreOperation(async () => {
       const statusEntry = {
         status,
         timestamp: new Date(),
@@ -68,10 +63,7 @@ export class FirestoreService {
           status,
           updatedAt: new Date(),
         });
-    } catch (error) {
-      console.error('Error adding status history:', error);
-      throw error;
-    }
+    });
   }
 
   async getMentorAvailability(userId) {
