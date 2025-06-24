@@ -153,47 +153,6 @@ export class FirestoreService {
     }
   }
 
-  async setMentorSchedule(userId, date, timeSlots) {
-    try {
-      const mentorRef = this.db.collection('mentors').doc(userId);
-      const doc = await mentorRef.get();
-
-      let schedule = [];
-      if (doc.exists && doc.data().schedule) {
-        schedule = doc.data().schedule.filter((item) => item.day !== date);
-      }
-
-      schedule.push({
-        day: date,
-        timeSlots: timeSlots,
-      });
-
-      await mentorRef.set(
-        {
-          userId,
-          schedule,
-          updatedAt: new Date(),
-        },
-        { merge: true }
-      );
-    } catch (error) {
-      console.error('Error setting mentor schedule:', error);
-      throw error;
-    }
-  }
-
-  async getMentorSchedule(userId) {
-    try {
-      const doc = await this.db.collection('mentors').doc(userId).get();
-      if (!doc.exists) {
-        return [];
-      }
-      return doc.data().schedule || [];
-    } catch (error) {
-      console.error('Error getting mentor schedule:', error);
-      throw error;
-    }
-  }
 
   async createOrUpdateMentor(userId, mentorData) {
     try {
@@ -236,18 +195,6 @@ export class FirestoreService {
     }
   }
 
-  async getMentorsBySpecialty(specialty) {
-    try {
-      const snapshot = await this.db
-        .collection('mentors')
-        .where('specialties', 'array-contains', specialty)
-        .get();
-      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    } catch (error) {
-      console.error('Error getting mentors by specialty:', error);
-      throw error;
-    }
-  }
 
   async createMentor(mentorData) {
     try {

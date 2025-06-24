@@ -1,44 +1,9 @@
 import { FirestoreService } from '../services/firestore.js';
-import { createStatusModal, formatScheduleInfo } from '../utils/schedule.js';
+import { createStatusModal } from '../utils/schedule.js';
 import { MENTOR_AVAILABILITY } from '../config/constants.js';
 
 const firestoreService = new FirestoreService();
 
-export const handleScheduleModalSubmission = async ({ ack, body, client }) => {
-  await ack();
-
-  try {
-    const values = body.view.state.values;
-    const userId = body.user.id;
-
-    const selectedDate = values.schedule_date.date.selected_option.value;
-    const selectedTimes = values.schedule_times.times.selected_options.map(
-      (option) => option.value
-    );
-
-    await firestoreService.setMentorSchedule(
-      userId,
-      selectedDate,
-      selectedTimes
-    );
-
-    // 設定完了後、現在のスケジュールを表示
-    const schedule = await firestoreService.getMentorSchedule(userId);
-    const scheduleMessage = formatScheduleInfo(schedule);
-
-    await client.chat.postMessage({
-      channel: body.user.id,
-      text: `スケジュールを設定しました。\n\n${scheduleMessage}`,
-    });
-  } catch (error) {
-    console.error('Error handling schedule modal submission:', error);
-
-    await client.chat.postMessage({
-      channel: body.user.id,
-      text: 'スケジュール設定中にエラーが発生しました。もう一度お試しください。',
-    });
-  }
-};
 
 export const handleStatusModalSubmission = async ({ ack, body, client }) => {
   await ack();

@@ -44,22 +44,6 @@ export const handleMentorStatusCommand = withErrorHandling(
   ERROR_MESSAGES.STATUS_UPDATE
 );
 
-export const handleMentorScheduleCommand = async ({ ack, body, client }) => {
-  await ack();
-
-  try {
-    await client.views.open({
-      trigger_id: body.trigger_id,
-      view: createScheduleModal(),
-    });
-  } catch (error) {
-    console.error('Error opening schedule modal:', error);
-    await client.chat.postMessage({
-      channel: body.channel_id,
-      text: 'スケジュール設定モーダルの表示中にエラーが発生しました。',
-    });
-  }
-};
 
 export const handleMentorRegisterCommand = async ({ ack, body, client }) => {
   await ack();

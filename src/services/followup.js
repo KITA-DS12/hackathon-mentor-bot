@@ -99,44 +99,47 @@ export class FollowUpService {
 
   async notifyMentorOfUnresolvedQuestion(questionId, question) {
     try {
-      if (!question.assignedMentor) {
+      if (!question.assignedMentors || question.assignedMentors.length === 0) {
         return;
       }
 
-      await this.client.chat.postMessage({
-        channel: question.assignedMentor,
-        text: `⚠️ フォローアップ: 2時間経過しても未解決の質問があります`,
-        blocks: [
-          {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text: `⚠️ *フォローアップ通知*\n質問者: <@${question.userId}>\n2時間経過しても未解決の状態です。`,
-            },
-          },
-          {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text: `*質問内容:*\n${question.content}`,
-            },
-          },
-          {
-            type: 'actions',
-            elements: [
-              {
-                type: 'button',
-                text: {
-                  type: 'plain_text',
-                  text: '質問を確認',
-                },
-                action_id: 'check_details',
-                value: questionId,
+      // 複数メンター対応：全担当メンターに通知
+      for (const mentorId of question.assignedMentors) {
+        await this.client.chat.postMessage({
+          channel: mentorId,
+          text: `⚠️ フォローアップ: 2時間経過しても未解決の質問があります`,
+          blocks: [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: `⚠️ *フォローアップ通知*\n質問者: <@${question.userId}>\n2時間経過しても未解決の状態です。`,
               },
-            ],
-          },
-        ],
-      });
+            },
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: `*質問内容:*\n${question.content}`,
+              },
+            },
+            {
+              type: 'actions',
+              elements: [
+                {
+                  type: 'button',
+                  text: {
+                    type: 'plain_text',
+                    text: '質問を確認',
+                  },
+                  action_id: 'check_details',
+                  value: questionId,
+                },
+              ],
+            },
+          ],
+        });
+      }
     } catch (error) {
       console.error('Error notifying mentor of unresolved question:', error);
     }
@@ -182,11 +185,13 @@ export class FollowUpService {
       });
 
       // メンターに再通知（担当メンターがいる場合）
-      if (question.assignedMentor) {
-        await this.client.chat.postMessage({
-          channel: question.assignedMentor,
-          text: `📢 <@${userId}>の質問がまだ未解決です。追加サポートが必要かもしれません。`,
-        });
+      if (question.assignedMentors && question.assignedMentors.length > 0) {
+        for (const mentorId of question.assignedMentors) {
+          await this.client.chat.postMessage({
+            channel: mentorId,
+            text: `📢 <@${userId}>の質問がまだ未解決です。追加サポートが必要かもしれません。`,
+          });
+        }
       }
     } catch (error) {
       console.error('Error handling unresolved from follow-up:', error);

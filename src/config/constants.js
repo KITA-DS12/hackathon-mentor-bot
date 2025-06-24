@@ -50,25 +50,3 @@ export const MENTOR_AVAILABILITY = {
   OFFLINE: 'offline',
 };
 
-export const TIME_SLOTS = [
-  '00:00-03:00',
-  '03:00-06:00',
-  '06:00-09:00',
-  '09:00-12:00',
-  '12:00-15:00',
-  '15:00-18:00',
-  '18:00-21:00',
-  '21:00-24:00',
-];
-
-export const MENTOR_SPECIALTIES = {
-  FRONTEND: 'フロントエンド',
-  BACKEND: 'バックエンド',
-  DESIGN: 'デザイン・UI/UX',
-  BUSINESS: 'ビジネス・企画',
-  INFRASTRUCTURE: 'インフラ・デプロイ',
-  MOBILE: 'モバイル開発',
-  DATABASE: 'データベース',
-  AI_ML: 'AI・機械学習',
-  GENERAL: '全般・その他',
-};

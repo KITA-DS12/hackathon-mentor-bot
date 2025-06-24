@@ -42,11 +42,6 @@ export const handleMentorRegistrationSubmission = async ({ ack, body, view, clie
             `ステータス変更は \`/mentor-status\` で行えます。`,
     });
 
-    // チャンネルにも新規メンター登録を通知（任意）
-    // await client.chat.postMessage({
-    //   channel: config.app.mentorChannelId,
-    //   text: `🎉 新しいメンターが登録されました！\n<@${userId}> さんが ${specialtiesText} の分野でサポートします。`,
-    // });
 
   } catch (error) {
     console.error('Error handling mentor registration:', error);
