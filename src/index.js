@@ -6,6 +6,7 @@ import {
   handleMentorStatusCommand,
   handleMentorRegisterCommand,
   handleMentorListCommand,
+  handleMentorQuestionsCommand,
   handleMentorUnregisterCommand,
 } from './handlers/commands.js';
 import {
@@ -31,6 +32,7 @@ import {
   handleStartResponse,
   handleCheckDetails,
   handlePauseResponse,
+  handleResumeResponse,
   handleCompleteResponse,
 } from './handlers/actions.js';
 import {
@@ -74,6 +76,7 @@ app.command('/mentor-help', handleMentorHelpCommand);
 app.command('/mentor-status', handleMentorStatusCommand);
 app.command('/mentor-register', handleMentorRegisterCommand);
 app.command('/mentor-list', handleMentorListCommand);
+app.command('/mentor-questions', handleMentorQuestionsCommand);
 app.command('/mentor-unregister', handleMentorUnregisterCommand);
 
 // Modal Submissions
@@ -90,6 +93,7 @@ app.view('question_type_selection_modal', handleQuestionTypeSelectionSubmission)
 app.action('start_response', handleStartResponse);
 app.action('check_details', handleCheckDetails);
 app.action('pause_response', handlePauseResponse);
+app.action('resume_response', handleResumeResponse);
 app.action('complete_response', handleCompleteResponse);
 app.action('change_status', handleChangeStatusAction);
 app.action('mark_resolved', handleMarkResolvedAction);

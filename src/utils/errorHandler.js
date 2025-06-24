@@ -67,6 +67,7 @@ export const ERROR_MESSAGES = {
   START_RESPONSE: '対応開始の処理中にエラーが発生しました。',
   CHECK_DETAILS: '詳細確認の処理中にエラーが発生しました。',
   PAUSE_RESPONSE: '対応中断の処理中にエラーが発生しました。',
+  RESUME_RESPONSE: '対応再開の処理中にエラーが発生しました。',
   COMPLETE_RESPONSE: '対応完了の処理中にエラーが発生しました。',
   GENERIC: '処理中にエラーが発生しました。もう一度お試しください。'
 };

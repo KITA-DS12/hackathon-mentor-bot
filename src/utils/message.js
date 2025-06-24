@@ -90,27 +90,46 @@ export const createQuestionMessage = (question, questionId) => {
         : []),
       {
         type: 'actions',
-        elements: [
-          {
-            type: 'button',
-            text: {
-              type: 'plain_text',
-              text: '対応開始',
+        elements: (() => {
+          const baseButtons = [
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: '詳細確認',
+              },
+              action_id: 'check_details',
+              value: questionId,
             },
-            style: 'primary',
-            action_id: 'start_response',
-            value: questionId,
-          },
-          {
-            type: 'button',
-            text: {
-              type: 'plain_text',
-              text: '詳細確認',
-            },
-            action_id: 'check_details',
-            value: questionId,
-          },
-        ],
+          ];
+
+          // 状態に応じてボタンを追加
+          if (question.status === 'waiting') {
+            baseButtons.unshift({
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: '対応開始',
+              },
+              style: 'primary',
+              action_id: 'start_response',
+              value: questionId,
+            });
+          } else if (question.status === 'paused') {
+            baseButtons.unshift({
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: '対応再開',
+              },
+              style: 'primary',
+              action_id: 'resume_response',
+              value: questionId,
+            });
+          }
+
+          return baseButtons;
+        })(),
       },
       {
         type: 'context',

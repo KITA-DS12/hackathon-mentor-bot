@@ -186,6 +186,78 @@ export const handlePauseResponse = withErrorHandling(
   ERROR_MESSAGES.PAUSE_RESPONSE
 );
 
+export const handleResumeResponse = withErrorHandling(
+  async ({ ack, body, client }) => {
+    await ack();
+
+    const questionId = body.actions[0].value;
+    const mentorId = body.user.id;
+
+    const question = await firestoreService.getQuestion(questionId);
+    if (!question) {
+      await client.chat.postEphemeral({
+        channel: body.channel.id,
+        user: body.user.id,
+        text: '質問が見つかりません。',
+      });
+      return;
+    }
+
+    // 中断状態の質問のみ再開可能
+    if (question.status !== QUESTION_STATUS.PAUSED) {
+      await client.chat.postEphemeral({
+        channel: body.channel.id,
+        user: body.user.id,
+        text: 'この質問は中断状態ではありません。',
+      });
+      return;
+    }
+
+    // 元の担当メンターかチェック（任意の実装）
+    if (question.assignedMentor && question.assignedMentor !== mentorId) {
+      await client.chat.postEphemeral({
+        channel: body.channel.id,
+        user: body.user.id,
+        text: `この質問は<@${question.assignedMentor}>が担当中です。`,
+      });
+      return;
+    }
+
+    await firestoreService.updateQuestion(questionId, {
+      status: QUESTION_STATUS.IN_PROGRESS,
+      assignedMentor: mentorId,
+    });
+
+    await firestoreService.addStatusHistory(
+      questionId,
+      QUESTION_STATUS.IN_PROGRESS,
+      mentorId
+    );
+
+    const statusMessage = createStatusUpdateMessage(
+      { ...question, status: QUESTION_STATUS.IN_PROGRESS },
+      questionId,
+      mentorId
+    );
+
+    await client.chat.postMessage({
+      channel: body.channel.id,
+      ...statusMessage,
+    });
+
+    await client.chat.postMessage({
+      channel: question.userId,
+      text: `<@${mentorId}>があなたの質問への対応を再開しました。`,
+    });
+  },
+  (args) => ({ 
+    client: args[0].client, 
+    userId: args[0].body.user.id, 
+    channelId: args[0].body.channel.id 
+  }),
+  ERROR_MESSAGES.RESUME_RESPONSE
+);
+
 export const handleCompleteResponse = withErrorHandling(
   async ({ ack, body, client }) => {
     await ack();

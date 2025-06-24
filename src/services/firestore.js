@@ -120,6 +120,35 @@ export class FirestoreService {
     }
   }
 
+  async getQuestionsByStatus(status) {
+    try {
+      const snapshot = await this.db
+        .collection('questions')
+        .where('status', '==', status)
+        .orderBy('createdAt', 'desc')
+        .get();
+      
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error getting questions by status:', error);
+      throw error;
+    }
+  }
+
+  async getAllQuestions() {
+    try {
+      const snapshot = await this.db
+        .collection('questions')
+        .orderBy('createdAt', 'desc')
+        .get();
+      
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error getting all questions:', error);
+      throw error;
+    }
+  }
+
   async getAllMentors() {
     try {
       const snapshot = await this.db.collection('mentors').get();

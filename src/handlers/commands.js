@@ -5,6 +5,7 @@ import { createStatusModal, formatMentorStatus } from '../utils/schedule.js';
 import { FirestoreService } from '../services/firestore.js';
 import { sendEphemeralMessage, openModal } from '../utils/slackUtils.js';
 import { withErrorHandling, ERROR_MESSAGES } from '../utils/errorHandler.js';
+import { createQuestionMessage } from '../utils/message.js';
 
 const firestoreService = new FirestoreService();
 
@@ -103,6 +104,57 @@ export const handleMentorListCommand = withErrorHandling(
   },
   { client: null, userId: null, channelId: null },
   ERROR_MESSAGES.MENTOR_LIST_FETCH
+);
+
+export const handleMentorQuestionsCommand = withErrorHandling(
+  async ({ ack, body, client }) => {
+    await ack();
+    
+    const waitingQuestions = await firestoreService.getQuestionsByStatus('waiting');
+    const pausedQuestions = await firestoreService.getQuestionsByStatus('paused');
+    const inProgressQuestions = await firestoreService.getQuestionsByStatus('in_progress');
+    
+    if (waitingQuestions.length === 0 && pausedQuestions.length === 0 && inProgressQuestions.length === 0) {
+      await sendEphemeralMessage(
+        client, 
+        body.channel_id, 
+        body.user_id, 
+        '📋 現在対応可能な質問はありません。'
+      );
+      return;
+    }
+
+    // 待機中の質問
+    for (const question of waitingQuestions) {
+      const message = createQuestionMessage(question, question.id);
+      await client.chat.postMessage({
+        channel: body.channel_id,
+        ...message,
+      });
+    }
+
+    // 中断中の質問
+    for (const question of pausedQuestions) {
+      const message = createQuestionMessage(question, question.id);
+      await client.chat.postMessage({
+        channel: body.channel_id,
+        ...message,
+      });
+    }
+
+    // 対応中の質問（参考情報として）
+    if (inProgressQuestions.length > 0) {
+      await client.chat.postMessage({
+        channel: body.channel_id,
+        text: `📋 *対応中の質問* (${inProgressQuestions.length}件)\n` +
+              inProgressQuestions.map(q => 
+                `• ${q.category} - <@${q.userId}> (担当: <@${q.assignedMentor}>)`
+              ).join('\n'),
+      });
+    }
+  },
+  { client: null, userId: null, channelId: null },
+  '質問一覧の取得中にエラーが発生しました。'
 );
 
 export const handleMentorUnregisterCommand = async ({ ack, body, client }) => {
