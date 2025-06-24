@@ -144,8 +144,9 @@ deploy-env: ## 環境変数付きでデプロイ
 		--source . \
 		--region $(REGION) \
 		--allow-unauthenticated \
-		--memory 512Mi \
+		--memory 1Gi \
 		--cpu 1 \
+		--concurrency 20 \
 		--min-instances 0 \
 		--max-instances 10 \
 		--set-env-vars SLACK_BOT_TOKEN=$$SLACK_BOT_TOKEN,SLACK_SIGNING_SECRET=$$SLACK_SIGNING_SECRET,GOOGLE_CLOUD_PROJECT=$$GOOGLE_CLOUD_PROJECT,MENTOR_CHANNEL_ID=$$MENTOR_CHANNEL_ID
@@ -157,8 +158,9 @@ deploy-simple: ## 簡単デプロイ（ソースから直接）
 		--source . \
 		--region $(REGION) \
 		--allow-unauthenticated \
-		--memory 512Mi \
+		--memory 1Gi \
 		--cpu 1 \
+		--concurrency 20 \
 		--min-instances 0 \
 		--max-instances 10
 	@echo "$(GREEN)✅ デプロイ完了！$(NC)"

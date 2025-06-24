@@ -22,33 +22,49 @@ const showReservationModal = async (client, triggerId, questionData) => {
  * 即座相談の処理
  */
 const processImmediateConsultation = async (client, questionData) => {
-  // アプリの応答確認（ウォームアップ）
-  console.log('Performing health check before processing question...');
-  const healthCheckResult = await healthCheckService.checkAndWarmup(2);
-  
-  if (!healthCheckResult) {
-    console.warn('Health check failed, but proceeding with question processing...');
-  }
+  try {
+    // アプリの応答確認（ウォームアップ）
+    console.log('Performing health check before processing question...');
+    const healthCheckResult = await healthCheckService.checkAndWarmup(2);
+    
+    if (!healthCheckResult) {
+      console.warn('Health check failed, but proceeding with question processing...');
+    }
 
-  const questionId = await firestoreService.createQuestion(questionData);
-  
-  // メンターチャンネルに質問を投稿
-  const questionMessage = createQuestionMessage(questionData, questionId);
-  const mentionText = await generateMentionText(questionData.category);
-  
-  await postQuestionToMentorChannel(client, questionMessage, mentionText);
-  
-  // 質問者にDMで確認
-  await sendUserConfirmation(
-    client, 
-    questionData.userId, 
-    '質問を送信しました。メンターからの返答をお待ちください。'
-  );
-  
-  // フォローアップを開始
-  await scheduleFollowUp(questionId, questionData.userId);
-  
-  return questionId;
+    console.log('Creating question in Firestore...');
+    const questionId = await firestoreService.createQuestion(questionData);
+    console.log('Question created with ID:', questionId);
+    
+    // メンターチャンネルに質問を投稿
+    console.log('Creating question message...');
+    const questionMessage = createQuestionMessage(questionData, questionId);
+    
+    console.log('Generating mention text for category:', questionData.category);
+    const mentionText = await generateMentionText(questionData.category);
+    
+    console.log('Posting question to mentor channel...');
+    await postQuestionToMentorChannel(client, questionMessage, mentionText);
+    console.log('Question posted to mentor channel successfully');
+    
+    // 質問者にDMで確認
+    console.log('Sending confirmation to user...');
+    await sendUserConfirmation(
+      client, 
+      questionData.userId, 
+      '質問を送信しました。メンターからの返答をお待ちください。'
+    );
+    console.log('Confirmation sent to user');
+    
+    // フォローアップを開始
+    console.log('Scheduling follow-up...');
+    await scheduleFollowUp(questionId, questionData.userId);
+    console.log('Follow-up scheduled');
+    
+    return questionId;
+  } catch (error) {
+    console.error('Error in processImmediateConsultation:', error);
+    throw error;
+  }
 };
 
 /**
@@ -69,30 +85,35 @@ const scheduleFollowUp = async (questionId, userId) => {
 
 export const handleQuestionModalSubmission = withErrorHandling(
   async ({ ack, body, client }) => {
-    // モーダルを閉じる
-    await ack();
-    
     const questionData = extractQuestionData(body.view.state.values, body.user.id);
     
     if (isReservationConsultation(questionData)) {
+      await ack();
       await showReservationModal(client, body.trigger_id, questionData);
       return;
     }
     
-    // 質問者にDMで処理中メッセージを送信
+    // 即座相談の場合は同期的に処理
     try {
-      await client.chat.postMessage({
-        channel: body.user.id,
-        text: '✅ 質問を処理しています...'
-      });
+      // モーダルを閉じて処理開始
+      await ack();
+      
+      console.log('Processing immediate consultation for user:', body.user.id);
+      await processImmediateConsultation(client, questionData);
+      console.log('Immediate consultation processed successfully');
+      
     } catch (error) {
-      console.error('Error sending processing message:', error);
+      console.error('Error processing immediate consultation:', error);
+      // エラーが発生した場合はユーザーに通知
+      try {
+        await client.chat.postMessage({
+          channel: body.user.id,
+          text: '❌ 質問の処理中にエラーが発生しました。もう一度お試しください。'
+        });
+      } catch (dmError) {
+        console.error('Error sending error message to user:', dmError);
+      }
     }
-    
-    // 非同期で質問処理を実行
-    processImmediateConsultation(client, questionData).catch(error => {
-      console.error('Error in async question processing:', error);
-    });
   },
   { client: null, userId: null }, // contextは実行時に設定
   ERROR_MESSAGES.QUESTION_SUBMISSION
@@ -116,46 +137,38 @@ const scheduleReservation = async (questionId, questionData) => {
 
 export const handleReservationModalSubmission = withErrorHandling(
   async ({ ack, body, client }) => {
-    // モーダルを閉じる
-    await ack();
-    
     const questionData = JSON.parse(body.view.private_metadata);
     const updatedQuestionData = extractReservationData(body.view.state.values, questionData);
     
-    // 処理中メッセージを送信
     try {
-      await client.chat.postMessage({
-        channel: body.user.id,
-        text: '✅ 予約相談を処理しています...'
-      });
+      // モーダルを閉じて処理開始
+      await ack();
+      
+      console.log('Processing reservation for user:', body.user.id);
+      
+      const questionId = await firestoreService.createQuestion(updatedQuestionData);
+      await scheduleReservation(questionId, updatedQuestionData);
+      
+      const confirmationMessage = `予約相談を受け付けました。${updatedQuestionData.reservationTime}に${
+        updatedQuestionData.autoResolveCheck ? '自動確認後、' : ''
+      }メンターに質問を送信します。`;
+      
+      await sendUserConfirmation(client, body.user.id, confirmationMessage);
+      console.log('Reservation processed successfully');
+      
     } catch (error) {
-      console.error('Error sending processing message:', error);
+      console.error('Error processing reservation:', error);
+      try {
+        await client.chat.postMessage({
+          channel: body.user.id,
+          text: '❌ 予約相談の処理中にエラーが発生しました。もう一度お試しください。'
+        });
+      } catch (dmError) {
+        console.error('Error sending error message to user:', dmError);
+      }
     }
-    
-    // 非同期で予約処理を実行
-    processReservation(client, updatedQuestionData, body.user.id).catch(error => {
-      console.error('Error in async reservation processing:', error);
-    });
   },
   { client: null, userId: null },
   ERROR_MESSAGES.RESERVATION_PROCESSING
 );
-
-// 予約処理を非同期化
-const processReservation = async (client, updatedQuestionData, userId) => {
-  try {
-    const questionId = await firestoreService.createQuestion(updatedQuestionData);
-    
-    await scheduleReservation(questionId, updatedQuestionData);
-    
-    const confirmationMessage = `予約相談を受け付けました。${updatedQuestionData.reservationTime}に${
-      updatedQuestionData.autoResolveCheck ? '自動確認後、' : ''
-    }メンターに質問を送信します。`;
-    
-    await sendUserConfirmation(client, userId, confirmationMessage);
-  } catch (error) {
-    console.error('Error processing reservation:', error);
-    await sendUserConfirmation(client, userId, '予約相談の処理中にエラーが発生しました。');
-  }
-};
 
