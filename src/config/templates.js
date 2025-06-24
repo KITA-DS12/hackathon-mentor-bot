@@ -24,6 +24,13 @@ export const QUESTION_TEMPLATES = {
           placeholder: 'コンソールエラーがあれば',
           required: false,
         },
+        {
+          id: 'related_code',
+          label: '関連するコード',
+          type: 'textarea',
+          placeholder: '問題に関連するコードがあれば貼り付けてください',
+          required: false,
+        },
       ],
     },
     バックエンド: {
@@ -50,6 +57,13 @@ export const QUESTION_TEMPLATES = {
           placeholder: 'サーバーログやエラーメッセージ',
           required: false,
         },
+        {
+          id: 'related_code',
+          label: '関連するコード',
+          type: 'textarea',
+          placeholder: '問題に関連するコードがあれば貼り付けてください',
+          required: false,
+        },
       ],
     },
     インフラ・デプロイ: {
@@ -74,6 +88,13 @@ export const QUESTION_TEMPLATES = {
           label: 'エラーメッセージ',
           type: 'textarea',
           placeholder: 'デプロイログやエラーメッセージ',
+          required: false,
+        },
+        {
+          id: 'related_code',
+          label: '関連するコード・設定',
+          type: 'textarea',
+          placeholder: '設定ファイルやデプロイ関連のコードがあれば',
           required: false,
         },
       ],
