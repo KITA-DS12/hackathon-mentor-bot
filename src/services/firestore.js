@@ -1,4 +1,4 @@
-import { Firestore } from '@google-cloud/firestore';
+import { Firestore, FieldValue } from '@google-cloud/firestore';
 import { config } from '../config/index.js';
 
 export class FirestoreService {
@@ -62,7 +62,7 @@ export class FirestoreService {
         .collection('questions')
         .doc(questionId)
         .update({
-          statusHistory: this.db.FieldValue.arrayUnion(statusEntry),
+          statusHistory: FieldValue.arrayUnion(statusEntry),
           status,
           updatedAt: new Date(),
         });
