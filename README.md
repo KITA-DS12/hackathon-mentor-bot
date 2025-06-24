@@ -363,6 +363,3 @@ curl https://your-service-url/health
 make slack-test
 ```
 
-## ライセンス
-
-MIT
