@@ -16,7 +16,7 @@ export const createQuestionModal = (freeMode = false) => {
         action_id: 'team_name',
         placeholder: {
           type: 'plain_text',
-          text: '例：チーム〇〇',
+          text: '例：ABC',
         },
       },
       label: {

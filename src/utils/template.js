@@ -119,6 +119,23 @@ export const createTemplateQuestionModal = (category, subcategory) => {
     {
       type: 'divider',
     },
+    // チーム名（共通・必須）
+    {
+      type: 'input',
+      block_id: 'team_name',
+      element: {
+        type: 'plain_text_input',
+        action_id: 'team_name',
+        placeholder: {
+          type: 'plain_text',
+          text: '例：ABC',
+        },
+      },
+      label: {
+        type: 'plain_text',
+        text: '👥 チーム名',
+      },
+    },
     // 問題サマリー（共通）
     {
       type: 'input',
@@ -252,6 +269,7 @@ export const formatTemplateQuestion = (questionData) => {
   const templateConfig = QUESTION_TEMPLATES[category][subcategory];
 
   let formattedContent = `📋 *${category} > ${subcategory}*\n\n`;
+  formattedContent += `*【チーム名】*\n${questionData.teamName}\n\n`;
   formattedContent += `*【問題サマリー】*\n${questionData.summary}\n\n`;
 
   // テンプレートフィールドをフォーマット

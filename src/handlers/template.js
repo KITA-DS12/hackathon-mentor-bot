@@ -82,6 +82,7 @@ export const handleTemplateQuestionSubmission = async ({
     const questionData = {
       category,
       subcategory,
+      teamName: values.team_name.team_name.value,
       summary: values.question_summary.summary.value,
       urgency: values.urgency.urgency.selected_option.value,
       consultationType:
@@ -103,6 +104,7 @@ export const handleTemplateQuestionSubmission = async ({
 
     const questionRecord = {
       userId: body.user.id,
+      teamName: questionData.teamName,
       content: formattedContent,
       category: `${category} > ${subcategory}`,
       urgency: questionData.urgency,
@@ -121,20 +123,7 @@ export const handleTemplateQuestionSubmission = async ({
       ],
     };
 
-    if (questionData.consultationType === CONSULTATION_TYPES.RESERVATION) {
-      // 予約相談の場合は追加のモーダルを表示
-      const { createReservationModal } = await import('../utils/modal.js');
-      await client.views.open({
-        trigger_id: body.trigger_id,
-        view: {
-          ...createReservationModal(),
-          private_metadata: JSON.stringify(questionRecord),
-        },
-      });
-      return;
-    }
-
-    // 即座に相談の場合はそのまま処理
+    // 質問を処理
     const questionId = await firestoreService.createQuestion(questionRecord);
 
     // メンターチャンネルに質問を投稿
@@ -148,16 +137,8 @@ export const handleTemplateQuestionSubmission = async ({
     // 質問者にDMで確認
     await client.chat.postMessage({
       channel: body.user.id,
-      text: '質問を送信しました。メンターからの返答をお待ちください。',
+      text: '✅ 質問を処理しています...',
     });
-
-    // フォローアップを開始
-    const { getFollowUpService } = await import('./followup.js');
-    const followUpService = getFollowUpService();
-
-    if (followUpService) {
-      followUpService.scheduleFollowUp(questionId, body.user.id);
-    }
   } catch (error) {
     console.error('Error handling template question submission:', error);
 
