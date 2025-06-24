@@ -62,7 +62,28 @@
 - **Deployment**: Google Cloud Run（自動スケーリング）
 - **Reliability**: 自動リトライ機能（指数バックオフ）
 - **Monitoring**: ヘルスチェック機能とシステム状態監視
-- **Cost**: 無料枠内で運用可能（最小リソース設定）
+- **Performance**: 最適化されたスペック（1GB RAM、20並行性）
+- **Cost**: 非常に低コスト（2週間で約12円）
+
+## システムスペック
+
+### Cloud Run設定
+- **メモリ**: 1GB
+- **CPU**: 1 vCPU
+- **並行性**: 20リクエスト/インスタンス
+- **最小インスタンス**: 0（使用時のみ課金）
+- **最大インスタンス**: 10
+- **タイムアウト**: 300秒
+
+### コスト試算（2週間）
+- **CPU使用料**: 約9円
+- **メモリ使用料**: 約1円
+- **リクエスト料**: 約0.05円
+- **Firestore**: 約1.5円
+- **その他**: 約0.7円
+- **合計**: **約12円**
+
+※ハッカソン参加者50名、1日60リクエスト想定
 
 ## 質問フォーム項目
 
@@ -335,12 +356,13 @@ src/
 
 ## パフォーマンス最適化
 
-- **メモリ効率**: 最小512MBで動作
-- **レスポンス時間**: Slack 3秒制限内で処理
+- **最適化されたスペック**: 1GB RAM + 20並行性で安定動作
+- **レスポンス時間**: Slack 3秒制限内で処理（非同期化対応）
 - **自動スケーリング**: Cloud Runの0→10インスタンス
 - **タイムアウト処理**: 予約・フォローアップのメモリ内管理
-- **Cold Start対策**: 自動リトライ機能で確実な処理実行
+- **Cold Start対策**: コスト効率重視（自動ウォームアップなし）
 - **ヘルスチェック**: 質問投稿前のウォームアップ機能
+- **非同期処理**: モーダル送信の即座応答＋背景処理
 
 ## モニタリング
 
@@ -368,22 +390,125 @@ curl https://your-service-url/health
 
 ## トラブルシューティング
 
-### よくある問題
-1. **モーダルが表示されない**: Slack App権限を確認
-2. **Firestoreエラー**: プロジェクトIDと権限を確認
-3. **タイムアウト**: Cloud Runのメモリ・CPU設定を調整
-4. **Slack API制限**: レート制限と権限を確認
+### よくある問題と解決方法
 
-### デバッグ
+#### 1. 質問投稿後にチャンネルに表示されない
+**症状**: 質問送信後、処理中メッセージは来るがチャンネルに投稿されない
+
+**解決方法**:
+```bash
+# ログを確認
+gcloud run services logs read hackathon-mentor-bot --region=asia-northeast1 --limit=30
+
+# システム状態確認
+/mentor-health
+
+# 環境変数確認
+make validate-env
+```
+
+**原因**:
+- Firestore接続エラー
+- メンターチャンネルID設定ミス
+- メモリ不足によるプロセス停止
+
+#### 2. "Slackになかなか接続できません"エラー
+**症状**: モーダル送信時にSlackタイムアウトエラー
+
+**解決方法**: 既に修正済み（非同期処理化）
+- モーダルは即座に閉じる
+- 処理中メッセージをDMで送信
+- 背景で質問投稿処理を実行
+
+#### 3. Cloud Runコールドスタート問題
+**症状**: 初回アクセス時の応答遅延
+
+**現在の対策**:
+- ヘルスチェック機能で事前ウォームアップ
+- 自動リトライ機能で確実な処理実行
+- コスト効率重視（常時稼働なし）
+
+#### 4. モーダルが表示されない
+**原因と解決方法**:
+```bash
+# Slack App権限を確認
+- channels:read
+- chat:write
+- chat:write.public
+- commands
+- im:read
+- im:write
+- users:read
+
+# Request URL設定確認
+https://your-service-url/slack/events
+```
+
+#### 5. Firestoreエラー
+**解決方法**:
+```bash
+# プロジェクトID確認
+gcloud config get-value project
+
+# Firestore有効化
+gcloud services enable firestore.googleapis.com
+
+# 権限確認
+gcloud projects get-iam-policy $PROJECT_ID
+```
+
+#### 6. 環境変数設定ミス
+**確認コマンド**:
+```bash
+# 環境変数検証
+make validate-env
+
+# Cloud Run環境変数確認
+gcloud run services describe hackathon-mentor-bot --region=asia-northeast1 --format="value(spec.template.spec.containers[0].env[].name,spec.template.spec.containers[0].env[].value)"
+
+# 環境変数再設定
+make set-env
+```
+
+### デバッグコマンド
 ```bash
 # ローカルでのデバッグ実行
 DEBUG=* npm run dev
+
+# Cloud Runログのリアルタイム監視
+make logs-tail
 
 # 特定のSlackイベントをテスト
 curl -X POST localhost:8080/slack/events \
   -H "Content-Type: application/json" \
   -d '{"type":"url_verification","challenge":"test"}'
+
+# ヘルスチェックテスト
+curl https://your-service-url/health
+
+# Slack接続テスト
+make slack-test
 ```
+
+### パフォーマンス問題
+```bash
+# メモリ使用量確認
+/mentor-health
+
+# CPU・メモリ使用率をCloud Consoleで確認
+https://console.cloud.google.com/run
+
+# スペック調整（必要に応じて）
+gcloud run services update hackathon-mentor-bot \
+  --region=asia-northeast1 \
+  --memory=2Gi \
+  --concurrency=10
+```
+
+### Slack API制限
+- レート制限: 1秒間に1リクエスト程度に調整
+- 権限不足: OAuth & Permissionsを再確認
+- Token有効性: Bot User OAuth Tokenの再生成
 
 ## ライセンス
 
