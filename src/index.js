@@ -33,6 +33,7 @@ import {
   handleCheckDetails,
   handlePauseResponse,
   handleResumeResponse,
+  handleReleaseAssignment,
   handleCompleteResponse,
 } from './handlers/actions.js';
 import {
@@ -94,6 +95,7 @@ app.action('start_response', handleStartResponse);
 app.action('check_details', handleCheckDetails);
 app.action('pause_response', handlePauseResponse);
 app.action('resume_response', handleResumeResponse);
+app.action('release_assignment', handleReleaseAssignment);
 app.action('complete_response', handleCompleteResponse);
 app.action('change_status', handleChangeStatusAction);
 app.action('mark_resolved', handleMarkResolvedAction);

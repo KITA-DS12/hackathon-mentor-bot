@@ -126,6 +126,27 @@ export const createQuestionMessage = (question, questionId) => {
               action_id: 'resume_response',
               value: questionId,
             });
+            baseButtons.push({
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: '担当解除',
+              },
+              style: 'danger',
+              action_id: 'release_assignment',
+              value: questionId,
+            });
+          } else if (question.status === 'in_progress') {
+            baseButtons.push({
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: '担当解除',
+              },
+              style: 'danger',
+              action_id: 'release_assignment',
+              value: questionId,
+            });
           }
 
           return baseButtons;

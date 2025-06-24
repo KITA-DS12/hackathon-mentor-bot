@@ -258,6 +258,79 @@ export const handleResumeResponse = withErrorHandling(
   ERROR_MESSAGES.RESUME_RESPONSE
 );
 
+export const handleReleaseAssignment = withErrorHandling(
+  async ({ ack, body, client }) => {
+    await ack();
+
+    const questionId = body.actions[0].value;
+    const mentorId = body.user.id;
+
+    const question = await firestoreService.getQuestion(questionId);
+    if (!question) {
+      await client.chat.postEphemeral({
+        channel: body.channel.id,
+        user: body.user.id,
+        text: '質問が見つかりません。',
+      });
+      return;
+    }
+
+    // 担当者の確認（担当者本人のみ解除可能）
+    if (question.assignedMentor !== mentorId) {
+      await client.chat.postEphemeral({
+        channel: body.channel.id,
+        user: body.user.id,
+        text: 'この質問はあなたが担当していません。',
+      });
+      return;
+    }
+
+    // 対応中または中断中の質問のみ解除可能
+    if (question.status !== QUESTION_STATUS.IN_PROGRESS && question.status !== QUESTION_STATUS.PAUSED) {
+      await client.chat.postEphemeral({
+        channel: body.channel.id,
+        user: body.user.id,
+        text: 'この質問は担当解除できない状態です。',
+      });
+      return;
+    }
+
+    // 担当を解除して待機中に戻す
+    await firestoreService.updateQuestion(questionId, {
+      status: QUESTION_STATUS.WAITING,
+      assignedMentor: null,
+    });
+
+    await firestoreService.addStatusHistory(
+      questionId,
+      QUESTION_STATUS.WAITING,
+      mentorId
+    );
+
+    const statusMessage = createStatusUpdateMessage(
+      { ...question, status: QUESTION_STATUS.WAITING },
+      questionId,
+      mentorId
+    );
+
+    await client.chat.postMessage({
+      channel: body.channel.id,
+      ...statusMessage,
+    });
+
+    await client.chat.postMessage({
+      channel: question.userId,
+      text: `<@${mentorId}>が担当を解除しました。他のメンターが対応可能になりました。`,
+    });
+  },
+  (args) => ({ 
+    client: args[0].client, 
+    userId: args[0].body.user.id, 
+    channelId: args[0].body.channel.id 
+  }),
+  ERROR_MESSAGES.RELEASE_ASSIGNMENT
+);
+
 export const handleCompleteResponse = withErrorHandling(
   async ({ ack, body, client }) => {
     await ack();
