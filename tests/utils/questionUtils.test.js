@@ -54,7 +54,7 @@ describe('questionUtils', () => {
 
       const result = extractQuestionData(values, userId);
 
-      expect(result.category).toBe('その他');
+      expect(result.category).toBe('技術的な問題');
       expect(result.urgency).toBe('🟡普通');
       expect(result.consultationType).toBe('すぐ相談したい');
       expect(result.currentSituation).toBe('');

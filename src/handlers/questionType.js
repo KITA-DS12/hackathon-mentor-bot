@@ -13,11 +13,6 @@ export const handleQuestionTypeSelectionSubmission = withErrorHandling(
     let nextModal;
     
     switch (selectedType) {
-      case 'free':
-        // 自由投稿 - 質問内容のみ必須のモーダル
-        nextModal = createQuestionModal(true); // freeMode = true
-        break;
-        
       case 'simple':
         // シンプル投稿 - 基本項目ありのモーダル
         nextModal = createQuestionModal(false); // freeMode = false
@@ -29,8 +24,8 @@ export const handleQuestionTypeSelectionSubmission = withErrorHandling(
         break;
         
       default:
-        // デフォルトは自由投稿
-        nextModal = createQuestionModal(true);
+        // デフォルトはシンプル投稿
+        nextModal = createQuestionModal(false);
     }
 
     await openModal(client, body.trigger_id, nextModal);

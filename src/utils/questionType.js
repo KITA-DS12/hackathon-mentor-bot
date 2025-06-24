@@ -30,14 +30,14 @@ export const createQuestionTypeSelectionModal = () => {
             type: 'plain_text',
             text: '質問方法を選択',
           },
-          options: [
-            {
-              text: {
-                type: 'plain_text',
-                text: '🚀 自由投稿 - 何でも気軽に質問',
-              },
-              value: 'free',
+          initial_option: {
+            text: {
+              type: 'plain_text',
+              text: '📝 シンプル投稿 - 基本項目で質問',
             },
+            value: 'simple',
+          },
+          options: [
             {
               text: {
                 type: 'plain_text',
@@ -64,9 +64,8 @@ export const createQuestionTypeSelectionModal = () => {
         text: {
           type: 'mrkdwn',
           text: '*📖 各方法の説明*\n\n' +
-                '🚀 *自由投稿*: 質問内容だけ入力すればOK。雑談や相談も歓迎！\n\n' +
-                '📝 *シンプル投稿*: カテゴリや緊急度も設定したい場合（すべて任意）\n\n' +
-                '📋 *詳細投稿*: 技術的な問題を構造化して詳しく質問したい場合',
+                '📝 *シンプル投稿*: 質問内容＋カテゴリ・緊急度・相談方法を設定（推奨）\n\n' +
+                '📋 *詳細投稿*: 技術的な問題を構造化して詳しく質問（テンプレート利用）',
         },
       },
     ],

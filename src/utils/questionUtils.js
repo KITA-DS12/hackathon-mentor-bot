@@ -1,7 +1,7 @@
 /**
  * 質問関連のユーティリティ関数
  */
-import { QUESTION_STATUS, CONSULTATION_TYPES } from '../config/constants.js';
+import { QUESTION_STATUS, CONSULTATION_TYPES, DEFAULT_VALUES } from '../config/constants.js';
 
 /**
  * モーダルから質問データを抽出・変換
@@ -14,9 +14,9 @@ export const extractQuestionData = (values, userId) => {
   return {
     userId,
     content: values.question_content.content.value,
-    category: values.category?.category?.selected_option?.value || 'その他',
-    urgency: values.urgency?.urgency?.selected_option?.value || '🟡普通',
-    consultationType: values.consultation_type?.consultation_type?.selected_option?.value || 'すぐ相談したい',
+    category: values.category?.category?.selected_option?.value || DEFAULT_VALUES.CATEGORY,
+    urgency: values.urgency?.urgency?.selected_option?.value || DEFAULT_VALUES.URGENCY,
+    consultationType: values.consultation_type?.consultation_type?.selected_option?.value || DEFAULT_VALUES.CONSULTATION_TYPE,
     currentSituation: values.current_situation?.current_situation?.value || '',
     relatedLinks: values.related_links?.related_links?.value || '',
     errorMessage: values.error_message?.error_message?.value || '',

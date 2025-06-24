@@ -5,6 +5,7 @@ import {
   RESERVATION_TIMES,
   MENTOR_SPECIALTIES,
   MENTOR_AVAILABILITY,
+  DEFAULT_VALUES,
 } from '../config/constants.js';
 
 export const createQuestionModal = (freeMode = false) => {
@@ -39,7 +40,14 @@ export const createQuestionModal = (freeMode = false) => {
           action_id: 'category',
           placeholder: {
             type: 'plain_text',
-            text: 'カテゴリを選択（任意）',
+            text: 'カテゴリを選択',
+          },
+          initial_option: {
+            text: {
+              type: 'plain_text',
+              text: DEFAULT_VALUES.CATEGORY,
+            },
+            value: DEFAULT_VALUES.CATEGORY,
           },
           options: Object.values(CATEGORIES).map((category) => ({
             text: {
@@ -51,9 +59,8 @@ export const createQuestionModal = (freeMode = false) => {
         },
         label: {
           type: 'plain_text',
-          text: 'カテゴリ（任意）',
+          text: 'カテゴリ',
         },
-        optional: true,
       },
       {
         type: 'input',
@@ -63,7 +70,14 @@ export const createQuestionModal = (freeMode = false) => {
           action_id: 'urgency',
           placeholder: {
             type: 'plain_text',
-            text: '緊急度を選択（任意）',
+            text: '緊急度を選択',
+          },
+          initial_option: {
+            text: {
+              type: 'plain_text',
+              text: DEFAULT_VALUES.URGENCY,
+            },
+            value: DEFAULT_VALUES.URGENCY,
           },
           options: Object.values(URGENCY_LEVELS).map((urgency) => ({
             text: {
@@ -75,9 +89,8 @@ export const createQuestionModal = (freeMode = false) => {
         },
         label: {
           type: 'plain_text',
-          text: '緊急度（任意）',
+          text: '緊急度',
         },
-        optional: true,
       },
       {
         type: 'input',
@@ -87,7 +100,14 @@ export const createQuestionModal = (freeMode = false) => {
           action_id: 'consultation_type',
           placeholder: {
             type: 'plain_text',
-            text: '相談方法を選択（任意）',
+            text: '相談方法を選択',
+          },
+          initial_option: {
+            text: {
+              type: 'plain_text',
+              text: DEFAULT_VALUES.CONSULTATION_TYPE,
+            },
+            value: DEFAULT_VALUES.CONSULTATION_TYPE,
           },
           options: Object.values(CONSULTATION_TYPES).map((type) => ({
             text: {
@@ -99,9 +119,8 @@ export const createQuestionModal = (freeMode = false) => {
         },
         label: {
           type: 'plain_text',
-          text: '相談方法（任意）',
+          text: '相談方法',
         },
-        optional: true,
       },
     );
   }
