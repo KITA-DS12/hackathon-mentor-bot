@@ -72,6 +72,19 @@ const app = new App({
   port: config.app.port,
 });
 
+// Health check endpoint
+app.receiver.router.get('/health', (req, res) => {
+  const healthData = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  };
+  
+  res.status(200).json(healthData);
+});
+
 // Slash Commands
 app.command('/mentor-help', handleMentorHelpCommand);
 app.command('/mentor-status', handleMentorStatusCommand);

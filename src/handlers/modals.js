@@ -6,8 +6,10 @@ import { extractQuestionData, extractReservationData, isReservationConsultation 
 import { generateMentionText } from '../utils/mentorUtils.js';
 import { postQuestionToMentorChannel, sendUserConfirmation, openModal } from '../utils/slackUtils.js';
 import { withErrorHandling, ERROR_MESSAGES } from '../utils/errorHandler.js';
+import { HealthCheckService } from '../utils/healthCheck.js';
 
 const firestoreService = new FirestoreService();
+const healthCheckService = new HealthCheckService();
 
 /**
  * 予約相談モーダルを表示
@@ -20,6 +22,14 @@ const showReservationModal = async (client, triggerId, questionData) => {
  * 即座相談の処理
  */
 const processImmediateConsultation = async (client, questionData) => {
+  // アプリの応答確認（ウォームアップ）
+  console.log('Performing health check before processing question...');
+  const healthCheckResult = await healthCheckService.checkAndWarmup(2);
+  
+  if (!healthCheckResult) {
+    console.warn('Health check failed, but proceeding with question processing...');
+  }
+
   const questionId = await firestoreService.createQuestion(questionData);
   
   // メンターチャンネルに質問を投稿
