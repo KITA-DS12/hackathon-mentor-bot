@@ -90,7 +90,7 @@ gcloud services enable containerregistry.googleapis.com
 #### 3-3. Slash Commands 設定
 **Features** → **Slash Commands** → **Create New Command**
 
-各コマンドを個別に作成（**合計5つのコマンド**）：
+各コマンドを個別に作成（**合計6つのコマンド**）：
 
 ##### `/mentor-help`
 ```
@@ -121,6 +121,14 @@ Usage Hint:
 Command: /mentor-list
 Request URL: https://your-app-url/slack/events
 Short Description: 登録メンター一覧を表示（ステータス付き）
+Usage Hint: 
+```
+
+##### `/mentor-questions`
+```
+Command: /mentor-questions
+Request URL: https://your-app-url/slack/events
+Short Description: 質問一覧・管理（要注意・待機中・中断中・対応中の質問を包括的に表示）
 Usage Hint: 
 ```
 
@@ -255,6 +263,7 @@ Slackチャンネルで以下のコマンドを順番にテスト：
 ```bash
 /mentor-register      # メンター登録フォームが表示される
 /mentor-list          # 登録したメンターが表示される
+/mentor-questions     # 質問一覧（現在は空）が表示される
 /mentor-status        # ステータス管理画面が表示される
 /mentor-unregister    # 登録解除確認画面が表示される
 ```
@@ -360,11 +369,12 @@ make project-info      # プロジェクト情報表示
 
 ### Slack App設定
 - [ ] Slack App作成・権限設定（7つの権限）
-- [ ] **Slash Commands設定（5つのコマンド）**
+- [ ] **Slash Commands設定（6つのコマンド）**
   - [ ] `/mentor-help` - 質問投稿
   - [ ] `/mentor-register` - メンター登録
   - [ ] `/mentor-unregister` - メンター登録解除  
   - [ ] `/mentor-list` - メンター一覧
+  - [ ] `/mentor-questions` - 質問一覧・管理
   - [ ] `/mentor-status` - ステータス管理
 - [ ] Interactive Components設定
 - [ ] Event Subscriptions設定（4つのイベント）
@@ -379,13 +389,14 @@ make project-info      # プロジェクト情報表示
 
 ## 📱 Quick Setup Summary
 
-**最重要**: 以下の5つのSlash Commandsを忘れずに設定してください：
+**最重要**: 以下の6つのSlash Commandsを忘れずに設定してください：
 
 ```
 /mentor-help          ← 質問投稿（メイン機能）
 /mentor-register      ← メンター登録
 /mentor-unregister    ← メンター登録解除
 /mentor-list          ← メンター一覧
+/mentor-questions     ← 質問一覧・管理（NEW）
 /mentor-status        ← ステータス管理
 ```
 
