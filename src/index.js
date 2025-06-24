@@ -17,7 +17,6 @@ import {
 } from './handlers/template.js';
 import {
   handleQuestionModalSubmission,
-  handleReservationModalSubmission,
 } from './handlers/modals.js';
 import {
   handleMentorRegistrationSubmission,
@@ -36,21 +35,12 @@ import {
   handleResumeResponse,
   handleReleaseAssignment,
   handleCompleteResponse,
+  handleMarkResolvedByUser,
 } from './handlers/actions.js';
 import {
   handleStatusModalSubmission,
   handleChangeStatusAction,
 } from './handlers/schedule.js';
-import {
-  initializeScheduler,
-  handleMarkResolvedAction,
-  handleSendToMentorAction,
-} from './handlers/reservation.js';
-import {
-  initializeFollowUp,
-  handleFollowUpResolvedAction,
-  handleFollowUpUnresolvedAction,
-} from './handlers/followup.js';
 
 // 環境変数チェック
 if (!config.slack.botToken || !config.slack.signingSecret) {
@@ -102,7 +92,6 @@ app.command('/mentor-health', handleMentorHealthCommand);
 
 // Modal Submissions
 app.view('question_modal', handleQuestionModalSubmission);
-app.view('reservation_modal', handleReservationModalSubmission);
 app.view('status_modal', handleStatusModalSubmission);
 app.view('category_selection_modal', handleCategorySelectionSubmission);
 app.view('subcategory_selection_modal', handleSubcategorySelectionSubmission);
@@ -117,11 +106,8 @@ app.action('pause_response', handlePauseResponse);
 app.action('resume_response', handleResumeResponse);
 app.action('release_assignment', handleReleaseAssignment);
 app.action('complete_response', handleCompleteResponse);
+app.action('mark_resolved_by_user', handleMarkResolvedByUser);
 app.action('change_status', handleChangeStatusAction);
-app.action('mark_resolved', handleMarkResolvedAction);
-app.action('send_to_mentor', handleSendToMentorAction);
-app.action('followup_resolved', handleFollowUpResolvedAction);
-app.action('followup_unresolved', handleFollowUpUnresolvedAction);
 app.action('confirm_unregister', handleConfirmUnregisterAction);
 app.action('cancel_unregister', handleCancelUnregisterAction);
 
@@ -136,13 +122,6 @@ app.error((error) => {
 
     // 環境変数が設定されている場合のみサービスを初期化
     if (config.slack.botToken && config.slack.signingSecret) {
-      // スケジューラーサービスを初期化
-      initializeScheduler(app.client);
-
-      // フォローアップサービスを初期化
-      initializeFollowUp(app.client);
-      
-      
       console.log('🎉 Hackathon Mentor Bot is fully initialized!');
     } else {
       console.log('⚠️  Slack認証情報が未設定のため、一部機能は無効です');

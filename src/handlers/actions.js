@@ -84,13 +84,6 @@ export const handleStartResponse = withErrorHandling(
       text: `<@${mentorId}>があなたの質問に対応を開始しました。メンターチャンネルのスレッドをご確認ください。`,
     });
 
-    // フォローアップをキャンセル（メンターが対応開始したため）
-    const { getFollowUpService } = await import('../handlers/followup.js');
-    const followUpService = getFollowUpService();
-
-    if (followUpService) {
-      followUpService.cancelFollowUp(questionId);
-    }
   },
   (args) => ({ 
     client: args[0].client, 
@@ -406,13 +399,6 @@ export const handleCompleteResponse = withErrorHandling(
       text: `<@${mentorId}>があなたの質問への対応を完了しました。ありがとうございました！`,
     });
 
-    // フォローアップをキャンセル（完了したため）
-    const { getFollowUpService } = await import('../handlers/followup.js');
-    const followUpService = getFollowUpService();
-
-    if (followUpService) {
-      followUpService.cancelFollowUp(questionId);
-    }
   },
   (args) => ({ 
     client: args[0].client, 
@@ -420,4 +406,98 @@ export const handleCompleteResponse = withErrorHandling(
     channelId: args[0].body.channel.id 
   }),
   ERROR_MESSAGES.COMPLETE_RESPONSE
+);
+
+export const handleMarkResolvedByUser = withErrorHandling(
+  async ({ ack, body, client }) => {
+    await ack();
+
+    const questionId = body.actions[0].value;
+    const userId = body.user.id;
+
+    const question = await firestoreService.getQuestion(questionId);
+    if (!question) {
+      await client.chat.postEphemeral({
+        channel: body.channel.id,
+        user: body.user.id,
+        text: '質問が見つかりません。',
+      });
+      return;
+    }
+
+    // 質問者本人のみ解決ボタンを押せる
+    if (question.userId !== userId) {
+      await client.chat.postEphemeral({
+        channel: body.channel.id,
+        user: body.user.id,
+        text: 'この質問の質問者のみが解決ボタンを押すことができます。',
+      });
+      return;
+    }
+
+    // 既に完了済みの場合は何もしない
+    if (question.status === QUESTION_STATUS.COMPLETED) {
+      await client.chat.postEphemeral({
+        channel: body.channel.id,
+        user: body.user.id,
+        text: 'この質問は既に完了済みです。',
+      });
+      return;
+    }
+
+    await firestoreService.updateQuestion(questionId, {
+      status: QUESTION_STATUS.COMPLETED,
+      resolvedByUser: true,
+    });
+
+    await firestoreService.addStatusHistory(
+      questionId,
+      QUESTION_STATUS.COMPLETED,
+      userId
+    );
+
+    const statusMessage = createStatusUpdateMessage(
+      { ...question, status: QUESTION_STATUS.COMPLETED },
+      questionId,
+      userId
+    );
+
+    await client.chat.postMessage({
+      channel: body.channel.id,
+      thread_ts: body.message.ts,
+      ...statusMessage,
+    });
+
+    // 担当メンターに通知
+    if (question.assignedMentors && question.assignedMentors.length > 0) {
+      for (const mentorId of question.assignedMentors) {
+        await client.chat.postMessage({
+          channel: mentorId,
+          text: `<@${userId}>が質問「${question.content.substring(0, 50)}...」を解決済みとしてマークしました。お疲れ様でした！`,
+        });
+      }
+    }
+
+    // 質問者にも確認メッセージ
+    await client.chat.postMessage({
+      channel: question.userId,
+      text: `質問を解決済みとしてマークしました。メンターのサポートをありがとうございました！`,
+    });
+
+    // スレッドにも通知
+    if (question.threadTs) {
+      await client.chat.postMessage({
+        channel: body.channel.id,
+        thread_ts: question.threadTs,
+        text: `🎉 <@${userId}>が質問を解決済みとしてマークしました。お疲れ様でした！`,
+      });
+    }
+
+  },
+  (args) => ({ 
+    client: args[0].client, 
+    userId: args[0].body.user.id, 
+    channelId: args[0].body.channel.id 
+  }),
+  ERROR_MESSAGES.MARK_RESOLVED_BY_USER
 );

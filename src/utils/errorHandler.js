@@ -70,5 +70,6 @@ export const ERROR_MESSAGES = {
   RESUME_RESPONSE: '対応再開の処理中にエラーが発生しました。',
   RELEASE_ASSIGNMENT: '担当解除の処理中にエラーが発生しました。',
   COMPLETE_RESPONSE: '対応完了の処理中にエラーが発生しました。',
+  MARK_RESOLVED_BY_USER: '解決マークの処理中にエラーが発生しました。',
   GENERIC: '処理中にエラーが発生しました。もう一度お試しください。'
 };

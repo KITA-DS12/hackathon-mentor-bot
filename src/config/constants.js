@@ -37,12 +37,6 @@ export const STATUS_EMOJI = {
   [QUESTION_STATUS.COMPLETED]: '✅',
 };
 
-export const RESERVATION_TIMES = {
-  '30分後': 30,
-  '1時間後': 60,
-  '2時間後': 120,
-  明日午前: 'tomorrow_morning',
-};
 
 export const MENTOR_AVAILABILITY = {
   AVAILABLE: 'available',

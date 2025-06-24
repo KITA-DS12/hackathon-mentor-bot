@@ -2,7 +2,6 @@ import {
   CATEGORIES,
   URGENCY_LEVELS,
   CONSULTATION_TYPES,
-  RESERVATION_TIMES,
   MENTOR_AVAILABILITY,
   DEFAULT_VALUES,
 } from '../config/constants.js';
@@ -211,76 +210,6 @@ export const createQuestionModal = (freeMode = false) => {
   };
 };
 
-export const createReservationModal = () => {
-  return {
-    type: 'modal',
-    callback_id: 'reservation_modal',
-    title: {
-      type: 'plain_text',
-      text: '予約相談の詳細',
-    },
-    submit: {
-      type: 'plain_text',
-      text: '予約して送信',
-    },
-    blocks: [
-      {
-        type: 'input',
-        block_id: 'reservation_time',
-        element: {
-          type: 'static_select',
-          action_id: 'reservation_time',
-          placeholder: {
-            type: 'plain_text',
-            text: '希望時間を選択',
-          },
-          options: Object.keys(RESERVATION_TIMES).map((time) => ({
-            text: {
-              type: 'plain_text',
-              text: time,
-            },
-            value: time,
-          })),
-        },
-        label: {
-          type: 'plain_text',
-          text: '希望相談時間',
-        },
-      },
-      {
-        type: 'input',
-        block_id: 'auto_resolve_check',
-        element: {
-          type: 'checkboxes',
-          action_id: 'auto_resolve_check',
-          initial_options: [
-            {
-              text: {
-                type: 'plain_text',
-                text: '予約時間に自力解決確認を受け取る',
-              },
-              value: 'auto_resolve_check',
-            },
-          ],
-          options: [
-            {
-              text: {
-                type: 'plain_text',
-                text: '予約時間に自力解決確認を受け取る',
-              },
-              value: 'auto_resolve_check',
-            },
-          ],
-        },
-        label: {
-          type: 'plain_text',
-          text: '自動解決確認',
-        },
-        optional: true,
-      },
-    ],
-  };
-};
 
 export const createMentorRegistrationModal = () => {
   return {

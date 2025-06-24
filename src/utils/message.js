@@ -104,6 +104,20 @@ export const createQuestionMessage = (question, questionId) => {
             },
           ];
 
+          // 質問者用の解決ボタンを追加（完了以外の状態）
+          if (question.status !== 'completed') {
+            baseButtons.push({
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: '✅ 解決済み',
+              },
+              style: 'primary',
+              action_id: 'mark_resolved_by_user',
+              value: questionId,
+            });
+          }
+
           // 状態に応じてボタンを追加
           if (question.status === 'waiting') {
             baseButtons.unshift({
@@ -241,6 +255,16 @@ export const createThreadInviteMessage = (questionId, questionContent) => {
             action_id: 'complete_response',
             value: questionId,
           },
+          {
+            type: 'button',
+            text: {
+              type: 'plain_text',
+              text: '✅ 解決済み',
+            },
+            style: 'primary',
+            action_id: 'mark_resolved_by_user',
+            value: questionId,
+          },
         ],
       },
     ],
@@ -283,6 +307,16 @@ export const createThreadStatusMessage = (questionId, status) => {
           action_id: 'complete_response',
           value: questionId,
         },
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: '✅ 解決済み',
+          },
+          style: 'primary',
+          action_id: 'mark_resolved_by_user',
+          value: questionId,
+        },
       ],
     });
   } else if (status === 'in_progress') {
@@ -307,6 +341,16 @@ export const createThreadStatusMessage = (questionId, status) => {
           },
           style: 'primary',
           action_id: 'complete_response',
+          value: questionId,
+        },
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: '✅ 解決済み',
+          },
+          style: 'primary',
+          action_id: 'mark_resolved_by_user',
           value: questionId,
         },
       ],
