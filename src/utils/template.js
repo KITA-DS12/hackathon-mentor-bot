@@ -251,25 +251,25 @@ export const formatTemplateQuestion = (questionData) => {
   const { category, subcategory } = questionData;
   const templateConfig = QUESTION_TEMPLATES[category][subcategory];
 
-  let formattedContent = `📋 **${category} > ${subcategory}**\n\n`;
-  formattedContent += `**【問題サマリー】**\n${questionData.summary}\n\n`;
+  let formattedContent = `📋 *${category} > ${subcategory}*\n\n`;
+  formattedContent += `*【問題サマリー】*\n${questionData.summary}\n\n`;
 
   // テンプレートフィールドをフォーマット
   templateConfig.fields.forEach((field) => {
     const value = questionData[field.id];
     if (value && value.trim()) {
-      formattedContent += `**【${field.label}】**\n${value}\n\n`;
+      formattedContent += `*【${field.label}】*\n${value}\n\n`;
     }
   });
 
   // 補足情報
   if (questionData.additionalInfo && questionData.additionalInfo.trim()) {
-    formattedContent += `**【補足情報】**\n${questionData.additionalInfo}\n\n`;
+    formattedContent += `*【補足情報】*\n${questionData.additionalInfo}\n\n`;
   }
 
   // 共通情報
-  formattedContent += `**【緊急度】** ${questionData.urgency}\n`;
-  formattedContent += `**【相談方法】** ${questionData.consultationType}\n`;
+  formattedContent += `*【緊急度】* ${questionData.urgency}\n`;
+  formattedContent += `*【相談方法】* ${questionData.consultationType}\n`;
 
   return formattedContent;
 };
