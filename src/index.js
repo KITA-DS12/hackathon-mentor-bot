@@ -1,5 +1,5 @@
 import pkg from '@slack/bolt';
-const { App } = pkg;
+const { App, ExpressReceiver } = pkg;
 import { config } from './config/index.js';
 import {
   handleMentorHelpCommand,
@@ -67,10 +67,14 @@ if (!config.slack.botToken || !config.slack.signingSecret) {
   console.log('⚠️  環境変数が未設定ですが、サーバーを起動します（設定後に再起動してください）');
 }
 
+// Expressレシーバーを明示的に作成
+const receiver = new ExpressReceiver({
+  signingSecret: config.slack.signingSecret || 'dummy-secret',
+});
+
 const app = new App({
   token: config.slack.botToken || 'dummy-token',
-  signingSecret: config.slack.signingSecret || 'dummy-secret',
-  port: config.app.port,
+  receiver,
 });
 
 // Health check endpoint
@@ -127,7 +131,7 @@ app.error((error) => {
 
 (async () => {
   try {
-    await app.start();
+    await app.start(config.app.port);
 
     // 環境変数が設定されている場合のみサービスを初期化
     if (config.slack.botToken && config.slack.signingSecret) {
