@@ -82,7 +82,7 @@ describe('modals handlers', () => {
             question_content: { content: { value: 'テスト質問' } },
             category: { category: { selected_option: { value: '技術的な問題' } } },
             consultation_type: { 
-              consultation_type: { selected_option: { value: 'すぐ相談したい' } } 
+              consultation_type: { selected_option: { value: 'Slackで相談' } } 
             }
           }
         }
@@ -105,7 +105,7 @@ describe('modals handlers', () => {
           userId: 'U123456',
           content: 'テスト質問',
           category: '技術的な問題',
-          consultationType: 'すぐ相談したい'
+          consultationType: 'Slackで相談'
         })
       );
       expect(generateMentionText).toHaveBeenCalledWith('技術的な問題');
@@ -113,37 +113,6 @@ describe('modals handlers', () => {
       expect(sendUserConfirmation).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle reservation consultation by opening modal', async () => {
-      const reservationBody = {
-        ...mockBody,
-        view: {
-          state: {
-            values: {
-              question_content: { content: { value: 'テスト質問' } },
-              consultation_type: { 
-                consultation_type: { selected_option: { value: '予約して相談' } } 
-              }
-            }
-          }
-        }
-      };
-      const mockAck = vi.fn();
-
-      await handleQuestionModalSubmission({ 
-        ack: mockAck, 
-        body: reservationBody, 
-        client: mockClient 
-      });
-
-      expect(mockAck).toHaveBeenCalled();
-      expect(openModal).toHaveBeenCalledWith(
-        mockClient,
-        'trigger123',
-        expect.any(Object),
-        expect.any(Object)
-      );
-      expect(__mockInstance.createQuestion).not.toHaveBeenCalled();
-    });
 
     it('should handle errors and send error message', async () => {
       __mockInstance.createQuestion.mockRejectedValue(new Error('Database error'));

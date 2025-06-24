@@ -56,7 +56,7 @@ describe('questionUtils', () => {
 
       expect(result.category).toBe('技術的な問題');
       expect(result.urgency).toBe('🟡普通');
-      expect(result.consultationType).toBe('すぐ相談したい');
+      expect(result.consultationType).toBe('Slackで相談');
       expect(result.currentSituation).toBe('');
       expect(result.relatedLinks).toBe('');
       expect(result.errorMessage).toBe('');
