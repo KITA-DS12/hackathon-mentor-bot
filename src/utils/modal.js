@@ -12,6 +12,22 @@ export const createQuestionModal = (freeMode = false) => {
   const baseBlocks = [
     {
       type: 'input',
+      block_id: 'team_name',
+      element: {
+        type: 'plain_text_input',
+        action_id: 'team_name',
+        placeholder: {
+          type: 'plain_text',
+          text: '例：チーム〇〇',
+        },
+      },
+      label: {
+        type: 'plain_text',
+        text: 'チーム名',
+      },
+    },
+    {
+      type: 'input',
       block_id: 'question_content',
       element: {
         type: 'plain_text_input',

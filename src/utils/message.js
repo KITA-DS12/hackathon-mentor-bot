@@ -45,7 +45,7 @@ export const createQuestionMessage = (question, questionId) => {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `*質問者:* <@${question.userId}>\n*緊急度:* ${question.urgency}\n*相談方法:* ${question.consultationType}`,
+          text: `*チーム:* ${question.teamName}\n*質問者:* <@${question.userId}>\n*緊急度:* ${question.urgency}\n*相談方法:* ${question.consultationType}`,
         },
       },
       {

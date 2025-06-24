@@ -117,6 +117,7 @@ export const handleCheckDetails = withErrorHandling(
 
     const detailsText = `
 *質問詳細:*
+チーム: ${question.teamName}
 質問者: <@${question.userId}>
 カテゴリ: ${question.category}
 緊急度: ${question.urgency}

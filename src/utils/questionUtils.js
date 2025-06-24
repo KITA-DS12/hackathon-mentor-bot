@@ -13,6 +13,7 @@ export const extractQuestionData = (values, userId) => {
   const now = new Date();
   return {
     userId,
+    teamName: values.team_name.team_name.value,
     content: values.question_content.content.value,
     category: values.category?.category?.selected_option?.value || DEFAULT_VALUES.CATEGORY,
     urgency: values.urgency?.urgency?.selected_option?.value || DEFAULT_VALUES.URGENCY,
