@@ -394,7 +394,7 @@ make project-info      # プロジェクト情報表示
   - [ ] `/mentor-list` - メンター一覧
   - [ ] `/mentor-questions` - 質問一覧・管理
   - [ ] `/mentor-status` - ステータス管理
-  - [ ] `/mentor-health` - システム状態確認（**NEW**）
+  - [ ] `/mentor-health` - システム状態確認
 - [ ] Interactive Components設定
 - [ ] Event Subscriptions設定（4つのイベント）
 - [ ] Slack Appインストール
@@ -402,7 +402,9 @@ make project-info      # プロジェクト情報表示
 ### 動作確認
 - [ ] 基本動作テスト（`/mentor-help`, `/mentor-list`）
 - [ ] メンター機能テスト（登録・一覧・ステータス・解除）
-- [ ] 質問投稿テスト（2つの投稿方法）
+- [ ] 質問投稿テスト（シンプル投稿・詳細投稿）
+- [ ] 質問者解決ボタン機能テスト
+- [ ] システム状態確認（`/mentor-health`）
 
 全ての項目が完了したら、ハッカソンメンターボットの利用を開始できます！
 
@@ -417,7 +419,7 @@ make project-info      # プロジェクト情報表示
 /mentor-list          ← メンター一覧
 /mentor-questions     ← 質問一覧・管理
 /mentor-status        ← ステータス管理
-/mentor-health        ← システム状態確認（NEW）
+/mentor-health        ← システム状態確認
 ```
 
 すべて同じRequest URL: `https://your-service-url/slack/events`
