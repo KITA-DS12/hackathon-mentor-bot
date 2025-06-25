@@ -7,12 +7,14 @@ import { QUESTION_STATUS, CONSULTATION_TYPES, DEFAULT_VALUES } from '../config/c
  * モーダルから質問データを抽出・変換
  * @param {Object} values - モーダルの入力値
  * @param {string} userId - ユーザーID
+ * @param {string} sourceChannelId - 質問が投稿されたチャンネルID
  * @returns {Object} 質問データ
  */
-export const extractQuestionData = (values, userId) => {
+export const extractQuestionData = (values, userId, sourceChannelId = null) => {
   const now = new Date();
   return {
     userId,
+    sourceChannelId, // 質問元のチャンネルIDを追加
     teamName: values.team_name.team_name.value,
     content: values.question_content.content.value,
     category: values.category?.category?.selected_option?.value || DEFAULT_VALUES.CATEGORY,

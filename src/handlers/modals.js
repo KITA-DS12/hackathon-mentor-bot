@@ -3,9 +3,10 @@ import { createQuestionMessage } from '../utils/message.js';
 import { createReservationModal } from '../utils/modal.js';
 import { generateTempId } from '../utils/index.js';
 import { CONSULTATION_TYPES } from '../config/constants.js';
+import { config } from '../config/index.js';
 import { extractQuestionData, extractReservationData, isReservationConsultation } from '../utils/questionUtils.js';
 import { generateMentionText } from '../utils/mentorUtils.js';
-import { postQuestionToMentorChannel, sendUserConfirmation, openModal } from '../utils/slackUtils.js';
+import { postQuestionToChannel, sendUserConfirmation, openModal } from '../utils/slackUtils.js';
 import { withErrorHandling, ERROR_MESSAGES } from '../utils/errorHandler.js';
 import { HealthCheckService } from '../utils/healthCheck.js';
 
@@ -42,9 +43,10 @@ const processImmediateConsultation = async (client, questionData) => {
     console.log('Generating mention text for category:', questionData.category);
     const mentionText = await generateMentionText(questionData.category);
     
-    console.log('Posting question to mentor channel immediately...');
-    await postQuestionToMentorChannel(client, questionMessage, mentionText);
-    console.log('✅ Question posted to mentor channel successfully with temp ID:', tempId);
+    console.log('Posting question to source channel immediately...');
+    const targetChannelId = questionData.sourceChannelId || config.app.mentorChannelId; // フォールバック
+    await postQuestionToChannel(client, targetChannelId, questionMessage, mentionText);
+    console.log('✅ Question posted to channel successfully with temp ID:', tempId, 'in channel:', targetChannelId);
     
     // 質問者にDMで確認
     console.log('Sending confirmation to user...');
@@ -120,7 +122,11 @@ const scheduleFollowUp = async (questionId, userId) => {
 
 export const handleQuestionModalSubmission = withErrorHandling(
   async ({ ack, body, client }) => {
-    const questionData = extractQuestionData(body.view.state.values, body.user.id);
+    // モーダルからチャンネル情報を取得
+    const metadata = body.view.private_metadata ? JSON.parse(body.view.private_metadata) : {};
+    const sourceChannelId = metadata.sourceChannelId;
+    
+    const questionData = extractQuestionData(body.view.state.values, body.user.id, sourceChannelId);
     
     if (isReservationConsultation(questionData)) {
       await ack();

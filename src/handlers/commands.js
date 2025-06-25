@@ -15,8 +15,11 @@ export const handleMentorHelpCommand = withErrorHandling(
   async ({ ack, body, client }) => {
     await ack();
     
+    // チャンネル情報をメタデータとして設定
+    const metadata = { sourceChannelId: body.channel_id };
+    
     // 質問方法選択モーダルを表示
-    await openModal(client, body.trigger_id, createQuestionTypeSelectionModal());
+    await openModal(client, body.trigger_id, createQuestionTypeSelectionModal(), metadata);
   },
   (args) => ({ client: args[0].client, userId: args[0].body.user_id, channelId: args[0].body.channel_id }),
   ERROR_MESSAGES.QUESTION_TYPE_SELECTION

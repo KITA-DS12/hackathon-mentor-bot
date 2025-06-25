@@ -22,10 +22,17 @@ export const handleCategorySelectionSubmission = async ({
     const selectedCategory =
       values.category_selection.category.selected_option.value;
 
+    // 前のモーダルからチャンネル情報を取得
+    const metadata = body.view.private_metadata ? JSON.parse(body.view.private_metadata) : {};
+    
+    const modal = createSubcategorySelectionModal(selectedCategory);
+    // チャンネル情報を次のモーダルに引き継ぎ
+    modal.private_metadata = JSON.stringify(metadata);
+
     // サブカテゴリ選択モーダルを表示
     await client.views.open({
       trigger_id: body.trigger_id,
-      view: createSubcategorySelectionModal(selectedCategory),
+      view: modal,
     });
   } catch (error) {
     console.error('Error handling category selection:', error);
@@ -51,10 +58,18 @@ export const handleSubcategorySelectionSubmission = async ({
     const selectedSubcategory =
       values.subcategory_selection.subcategory.selected_option.value;
 
+    const modal = createTemplateQuestionModal(selectedCategory, selectedSubcategory);
+    // チャンネル情報を次のモーダルに引き継ぎ
+    modal.private_metadata = JSON.stringify({
+      selectedCategory,
+      selectedSubcategory,
+      sourceChannelId: metadata.sourceChannelId // チャンネル情報を保持
+    });
+
     // テンプレート質問フォームを表示
     await client.views.open({
       trigger_id: body.trigger_id,
-      view: createTemplateQuestionModal(selectedCategory, selectedSubcategory),
+      view: modal,
     });
   } catch (error) {
     console.error('Error handling subcategory selection:', error);
@@ -104,6 +119,7 @@ export const handleTemplateQuestionSubmission = async ({
 
     const questionRecord = {
       userId: body.user.id,
+      sourceChannelId: metadata.sourceChannelId, // チャンネル情報を追加
       teamName: questionData.teamName,
       content: formattedContent,
       category: `${category} > ${subcategory}`,
