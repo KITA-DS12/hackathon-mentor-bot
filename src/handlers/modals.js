@@ -26,8 +26,15 @@ const processQuestionSubmission = async (client, questionData) => {
     // 🚀 STEP 1: Firestoreに質問を保存
     console.log(`[${Date.now()}] Saving question to Firestore...`);
     const firestoreStart = Date.now();
-    const questionId = await firestoreService.createQuestion(questionData);
-    console.log(`[${Date.now()}] ✅ Question saved to Firestore with ID: ${questionId} (${Date.now() - firestoreStart}ms)`);
+    
+    let questionId;
+    try {
+      questionId = await firestoreService.createQuestion(questionData);
+      console.log(`[${Date.now()}] ✅ Question saved to Firestore with ID: ${questionId} (${Date.now() - firestoreStart}ms)`);
+    } catch (firestoreError) {
+      console.error(`[${Date.now()}] ❌ Firestore save failed after ${Date.now() - firestoreStart}ms:`, firestoreError);
+      throw firestoreError;
+    }
 
     // 🚀 STEP 2: 並列でメッセージ作成とメンション生成
     console.log(`[${Date.now()}] Creating message and generating mentions in parallel...`);

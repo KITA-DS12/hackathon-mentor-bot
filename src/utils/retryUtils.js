@@ -18,8 +18,8 @@ export class RetryUtils {
       } catch (attemptError) {
         lastError = attemptError;
 
-        if (attempt === maxRetries || !shouldRetry(error)) {
-          throw error;
+        if (attempt === maxRetries || !shouldRetry(attemptError)) {
+          throw attemptError;
         }
 
         const delay = Math.min(
@@ -29,7 +29,7 @@ export class RetryUtils {
 
         console.log(
           `Operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`,
-          error.message
+          attemptError.message
         );
         await setTimeout(delay);
       }
