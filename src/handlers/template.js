@@ -65,14 +65,16 @@ export const handleTemplateQuestionSubmission = async ({
     const metadata = JSON.parse(body.view.private_metadata);
     const { category } = metadata;
 
+    console.log('Debug: Form values =', JSON.stringify(values, null, 2));
+
     // フォームデータを収集
     const questionData = {
       category,
-      teamName: values.team_name.team_name.value,
-      summary: values.question_summary.summary.value,
-      urgency: values.urgency.urgency.selected_option.value,
+      teamName: values.team_name?.team_name?.value || '',
+      summary: values.question_summary?.summary?.value || '',
+      urgency: values.urgency?.urgency?.selected_option?.value || '',
       consultationType:
-        values.consultation_type.consultation_type.selected_option.value,
+        values.consultation_type?.consultation_type?.selected_option?.value || '',
       additionalInfo: values.additional_info?.additional_info?.value || '',
     };
 
