@@ -56,7 +56,10 @@ export const createCategorySelectionModal = () => {
 };
 
 export const createTemplateQuestionModal = (category) => {
+  console.log('Debug: Creating template for category:', category);
+  console.log('Debug: Available templates:', Object.keys(QUESTION_TEMPLATES));
   const template = QUESTION_TEMPLATES[category];
+  console.log('Debug: Found template:', template ? 'YES' : 'NO');
 
   const blocks = [
     {
