@@ -12,7 +12,6 @@ import {
 } from './handlers/commands.js';
 import {
   handleCategorySelectionSubmission,
-  handleSubcategorySelectionSubmission,
   handleTemplateQuestionSubmission,
 } from './handlers/template.js';
 import { handleQuestionModalSubmission } from './handlers/modals.js';
@@ -95,7 +94,6 @@ app.command('/mentor-health', handleMentorHealthCommand);
 app.view('question_modal', handleQuestionModalSubmission);
 app.view('status_modal', handleStatusModalSubmission);
 app.view('category_selection_modal', handleCategorySelectionSubmission);
-app.view('subcategory_selection_modal', handleSubcategorySelectionSubmission);
 app.view('template_question_modal', handleTemplateQuestionSubmission);
 app.view('mentor_registration_modal', handleMentorRegistrationSubmission);
 app.view(
