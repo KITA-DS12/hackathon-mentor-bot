@@ -1,24 +1,16 @@
 import { FirestoreService } from '../services/firestore.js';
 import { createQuestionMessage } from '../utils/message.js';
-import { createReservationModal } from '../utils/modal.js';
 import { generateTempId } from '../utils/index.js';
-import { CONSULTATION_TYPES } from '../config/constants.js';
 import { config } from '../config/index.js';
-import { extractQuestionData, extractReservationData, isReservationConsultation } from '../utils/questionUtils.js';
+import { extractQuestionData } from '../utils/questionUtils.js';
 import { generateMentionText } from '../utils/mentorUtils.js';
-import { postQuestionToChannel, sendUserConfirmation, openModal, notifyMentorChannel } from '../utils/slackUtils.js';
+import { postQuestionToChannel, sendUserConfirmation, notifyMentorChannel } from '../utils/slackUtils.js';
 import { withErrorHandling, ERROR_MESSAGES } from '../utils/errorHandler.js';
 import { HealthCheckService } from '../utils/healthCheck.js';
 
 const firestoreService = new FirestoreService();
 const healthCheckService = new HealthCheckService();
 
-/**
- * 予約相談モーダルを表示
- */
-const showReservationModal = async (client, triggerId, questionData) => {
-  return await openModal(client, triggerId, createReservationModal(), questionData);
-};
 
 /**
  * 即座相談の処理
@@ -43,15 +35,38 @@ const processImmediateConsultation = async (client, questionData) => {
     console.log('Generating mention text for category:', questionData.category);
     const mentionText = await generateMentionText(questionData.category);
     
-    console.log('Posting question to source channel immediately...');
-    const targetChannelId = questionData.sourceChannelId || config.app.mentorChannelId; // フォールバック
-    const questionResult = await postQuestionToChannel(client, targetChannelId, questionMessage, mentionText);
-    console.log('✅ Question posted to channel successfully with temp ID:', tempId, 'in channel:', targetChannelId);
+    console.log('Posting question to source channel...');
+    // 元のチャンネルに投稿し、エラー時はメンターチャンネルにフォールバック
+    const targetChannelId = questionData.sourceChannelId || config.app.mentorChannelId;
+    console.log('Debug: sourceChannelId =', questionData.sourceChannelId);
+    console.log('Debug: mentorChannelId =', config.app.mentorChannelId);
+    console.log('Debug: targetChannelId =', targetChannelId);
     
-    // メンターチャンネルに通知を送信
-    console.log('Sending notification to mentor channel...');
-    await notifyMentorChannel(client, questionData, tempId, questionResult.ts, mentionText);
-    console.log('✅ Mentor channel notification sent');
+    let questionResult;
+    let finalTargetChannelId = targetChannelId;
+    
+    try {
+      questionResult = await postQuestionToChannel(client, targetChannelId, questionMessage, mentionText);
+      console.log('✅ Question posted to channel successfully with temp ID:', tempId, 'in channel:', targetChannelId);
+    } catch (error) {
+      if (error.data?.error === 'channel_not_found' && targetChannelId !== config.app.mentorChannelId) {
+        console.log('❌ Failed to post to source channel, falling back to mentor channel...');
+        finalTargetChannelId = config.app.mentorChannelId;
+        questionResult = await postQuestionToChannel(client, finalTargetChannelId, questionMessage, mentionText);
+        console.log('✅ Question posted to mentor channel as fallback with temp ID:', tempId);
+      } else {
+        throw error; // 他のエラーは再スロー
+      }
+    }
+    
+    // メンターチャンネルに投稿していない場合のみ通知を送信
+    if (finalTargetChannelId !== config.app.mentorChannelId) {
+      console.log('Sending notification to mentor channel...');
+      await notifyMentorChannel(client, questionData, tempId, questionResult.ts, mentionText);
+      console.log('✅ Mentor channel notification sent');
+    } else {
+      console.log('✅ Question already posted to mentor channel, skipping duplicate notification');
+    }
     
     // 質問者にDMで確認
     console.log('Sending confirmation to user...');
@@ -135,15 +150,12 @@ export const handleQuestionModalSubmission = withErrorHandling(
     const metadata = body.view.private_metadata ? JSON.parse(body.view.private_metadata) : {};
     const sourceChannelId = metadata.sourceChannelId;
     
+    console.log('Debug: Modal metadata =', metadata);
+    console.log('Debug: Extracted sourceChannelId =', sourceChannelId);
+    
     const questionData = extractQuestionData(body.view.state.values, body.user.id, sourceChannelId);
     
-    if (isReservationConsultation(questionData)) {
-      await ack();
-      await showReservationModal(client, body.trigger_id, questionData);
-      return;
-    }
-    
-    // 即座相談の場合は同期的に処理
+    // 即座相談として処理
     try {
       // モーダルを閉じて処理開始
       await ack();
@@ -169,56 +181,4 @@ export const handleQuestionModalSubmission = withErrorHandling(
   ERROR_MESSAGES.QUESTION_SUBMISSION
 );
 
-/**
- * 予約スケジューリング
- */
-const scheduleReservation = async (questionId, questionData) => {
-  try {
-    const { getSchedulerService } = await import('./reservation.js');
-    const schedulerService = getSchedulerService();
-    
-    if (schedulerService) {
-      schedulerService.scheduleQuestion(questionId, questionData);
-    }
-  } catch (error) {
-    console.error('Error scheduling reservation:', error);
-  }
-};
-
-export const handleReservationModalSubmission = withErrorHandling(
-  async ({ ack, body, client }) => {
-    const questionData = JSON.parse(body.view.private_metadata);
-    const updatedQuestionData = extractReservationData(body.view.state.values, questionData);
-    
-    try {
-      // モーダルを閉じて処理開始
-      await ack();
-      
-      console.log('Processing reservation for user:', body.user.id);
-      
-      const questionId = await firestoreService.createQuestion(updatedQuestionData);
-      await scheduleReservation(questionId, updatedQuestionData);
-      
-      const confirmationMessage = `予約相談を受け付けました。${updatedQuestionData.reservationTime}に${
-        updatedQuestionData.autoResolveCheck ? '自動確認後、' : ''
-      }メンターに質問を送信します。`;
-      
-      await sendUserConfirmation(client, body.user.id, confirmationMessage);
-      console.log('Reservation processed successfully');
-      
-    } catch (error) {
-      console.error('Error processing reservation:', error);
-      try {
-        await client.chat.postMessage({
-          channel: body.user.id,
-          text: '❌ 予約相談の処理中にエラーが発生しました。もう一度お試しください。'
-        });
-      } catch (dmError) {
-        console.error('Error sending error message to user:', dmError);
-      }
-    }
-  },
-  { client: null, userId: null },
-  ERROR_MESSAGES.RESERVATION_PROCESSING
-);
 

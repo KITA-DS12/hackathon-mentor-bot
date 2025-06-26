@@ -46,7 +46,7 @@ export const createQuestionMessage = (question, questionId) => {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `*チーム:* ${question.teamName}\n*質問者:* <@${question.userId}>\n*緊急度:* ${question.urgency}\n*相談方法:* ${question.consultationType}`,
+          text: `*チーム:* ${question.teamName}\n*質問者:* <@${question.userId}>\n*緊急度:* ${question.urgency}\n*相談方法:* ${question.consultationType}${question.sourceChannelId ? `\n*チャンネル:* <#${question.sourceChannelId}>` : ''}`,
         },
       },
       {
@@ -172,7 +172,7 @@ export const createQuestionMessage = (question, questionId) => {
         elements: [
           {
             type: 'mrkdwn',
-            text: `質問ID: ${questionId} | 作成: ${formatTimestamp(question.createdAt)}${question.threadTs ? ` | <https://slack.com/app_redirect?channel=${config.app.mentorChannelId}&message_ts=${question.threadTs}|スレッドリンク>` : ''}`,
+            text: `質問ID: ${questionId} | 作成: ${formatTimestamp(question.createdAt)}${question.sourceChannelId ? ` | 投稿先: <#${question.sourceChannelId}>` : ''}${question.threadTs ? ` | <https://slack.com/app_redirect?channel=${question.sourceChannelId || config.app.mentorChannelId}&message_ts=${question.threadTs}|スレッドリンク>` : ''}`,
           },
         ],
       },

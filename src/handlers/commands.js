@@ -129,6 +129,22 @@ const processQuestionsList = async (client, channelId, userId) => {
       mentors: allMentors.length
     });
     
+    // チャンネル別統計を作成
+    const allQuestions = [...waitingQuestions, ...pausedQuestions, ...inProgressQuestions];
+    const channelStats = {};
+    allQuestions.forEach(q => {
+      const channelId = q.sourceChannelId || 'unknown';
+      if (!channelStats[channelId]) {
+        channelStats[channelId] = { waiting: 0, paused: 0, in_progress: 0, total: 0 };
+      }
+      // ステータスをキーとして使用（アンダースコアを含む正確なキー）
+      const statusKey = q.status === 'in_progress' ? 'in_progress' : q.status;
+      if (channelStats[channelId][statusKey] !== undefined) {
+        channelStats[channelId][statusKey]++;
+      }
+      channelStats[channelId].total++;
+    });
+
     if (waitingQuestions.length === 0 && pausedQuestions.length === 0 && inProgressQuestions.length === 0) {
       await sendEphemeralMessage(
         client, 
@@ -137,6 +153,21 @@ const processQuestionsList = async (client, channelId, userId) => {
         '📋 現在対応可能な質問はありません。'
       );
       return;
+    }
+
+    // チャンネル別統計を表示
+    if (Object.keys(channelStats).length > 1) {
+      const statsText = Object.entries(channelStats).map(([chId, stats]) => {
+        const channelName = chId === 'unknown' ? '不明' : `<#${chId}>`;
+        return `${channelName}: ${stats.total}件 (🟡${stats.waiting} 🟠${stats.paused} 🔵${stats.in_progress})`;
+      }).join('\n');
+      
+      await sendEphemeralMessage(
+        client,
+        channelId,
+        userId,
+        `📊 *チャンネル別質問統計*\n${statsText}\n`
+      );
     }
 
     // メンターIDのセットを作成（担当者不在チェック用）
@@ -172,7 +203,8 @@ const processQuestionsList = async (client, channelId, userId) => {
           if (questionDate < oneDayAgo) {
             issues.push('24時間以上経過');
           }
-          return `• ${q.category} - <@${q.userId}> (${issues.join('・')})`;
+          const channelInfo = q.sourceChannelId ? ` | <#${q.sourceChannelId}>` : '';
+          return `• ${q.category} - <@${q.userId}>${channelInfo} (${issues.join('・')})`;
         }).join('\n')
       );
     }

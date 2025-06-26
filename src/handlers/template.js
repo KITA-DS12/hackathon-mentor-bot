@@ -7,6 +7,8 @@ import { FirestoreService } from '../services/firestore.js';
 import { createQuestionMessage } from '../utils/message.js';
 import { QUESTION_STATUS, CONSULTATION_TYPES } from '../config/constants.js';
 import { config } from '../config/index.js';
+import { postQuestionToChannel, notifyMentorChannel } from '../utils/slackUtils.js';
+import { generateMentionText } from '../utils/mentorUtils.js';
 
 const firestoreService = new FirestoreService();
 
@@ -139,21 +141,45 @@ export const handleTemplateQuestionSubmission = async ({
       ],
     };
 
-    // 質問を処理
-    const questionId = await firestoreService.createQuestion(questionRecord);
+    // チームチャンネルに質問投稿
+    const questionMessage = createQuestionMessage(questionRecord, 'temp_template_' + Date.now());
+    const mentionText = await generateMentionText(questionRecord.category);
+    
+    const targetChannelId = questionRecord.sourceChannelId || config.app.mentorChannelId;
+    
+    let questionResult;
+    let finalTargetChannelId = targetChannelId;
+    
+    try {
+      questionResult = await postQuestionToChannel(client, targetChannelId, questionMessage, mentionText);
+    } catch (error) {
+      if (error.data?.error === 'channel_not_found' && targetChannelId !== config.app.mentorChannelId) {
+        console.log('Template: Failed to post to source channel, falling back to mentor channel...');
+        finalTargetChannelId = config.app.mentorChannelId;
+        questionResult = await postQuestionToChannel(client, finalTargetChannelId, questionMessage, mentionText);
+      } else {
+        throw error;
+      }
+    }
 
-    // メンターチャンネルに質問を投稿
-    const questionMessage = createQuestionMessage(questionRecord, questionId);
+    // 質問データにタイムスタンプを追加
+    const questionRecordWithTs = {
+      ...questionRecord,
+      messageTs: questionResult.ts,
+    };
 
-    await client.chat.postMessage({
-      channel: config.app.mentorChannelId,
-      ...questionMessage,
-    });
+    // Firestoreに質問を保存
+    const questionId = await firestoreService.createQuestion(questionRecordWithTs);
+
+    // メンターチャンネルに投稿していない場合のみ通知を送信
+    if (finalTargetChannelId !== config.app.mentorChannelId) {
+      await notifyMentorChannel(client, questionRecordWithTs, questionId, questionResult.ts, mentionText);
+    }
 
     // 質問者にDMで確認
     await client.chat.postMessage({
       channel: body.user.id,
-      text: '✅ 質問を処理しています...',
+      text: '質問を送信しました。メンターからの返答をお待ちください。',
     });
   } catch (error) {
     console.error('Error handling template question submission:', error);

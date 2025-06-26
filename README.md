@@ -42,6 +42,7 @@
 - **メンターチャンネル通知**: 全チャンネルの質問をメンターチャンネルに集約通知
 - **元チャンネルでスレッド作成**: 対応開始時に質問元のチームチャンネルでスレッド作成
 - **チーム内対応**: チームメンバー全員が対応過程を確認可能
+- **チャンネル別統計**: 複数チャンネルの質問分布を可視化表示
 - リアルタイムステータス管理：🟡対応待ち → 🔵対応中 → 🟠中断中 → ✅完了
 - **対応中断・再開機能**: 一時的な離席に対応
 - **担当解除機能**: 質問を他のメンターに引き継ぎ可能
@@ -132,6 +133,7 @@
 {
   id: "question_123",
   userId: "user_id",
+  sourceChannelId: "C1234567890", // 質問投稿元のチャンネルID（NEW）
   teamName: "ABC", // 必須フィールド
   content: "質問内容",
   category: "技術的な問題",
@@ -140,6 +142,7 @@
   status: "waiting|in_progress|paused|completed",
   assignedMentors: ["mentor_id1", "mentor_id2"], // 複数メンター対応
   threadTs: "1234567890.123456",
+  messageTs: "1234567890.123456", // 元チャンネルでの質問メッセージタイムスタンプ
   resolvedByUser: true, // 質問者による解決マーク
   statusHistory: [
     { status: "waiting", timestamp: "...", user: "..." },
@@ -149,6 +152,7 @@
   currentSituation: "試したこと",
   relatedLinks: "関連URL",
   errorMessage: "エラー内容",
+  templateData: {}, // テンプレート質問のデータ
   createdAt: "timestamp",
   updatedAt: "timestamp"
 }
