@@ -22,14 +22,21 @@ export class FirestoreService {
   }
 
   async createQuestion(questionData) {
-    // 一時的にリトライを無効化してパフォーマンス問題を調査
     try {
       console.log(`[${Date.now()}] Firestore: Starting to save question...`);
-      const docRef = await this.db.collection('questions').add({
+      
+      // タイムアウトを設定してFirestore操作を実行
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Firestore operation timeout')), 10000); // 10秒タイムアウト
+      });
+      
+      const operationPromise = this.db.collection('questions').add({
         ...questionData,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+      
+      const docRef = await Promise.race([operationPromise, timeoutPromise]);
       console.log(`[${Date.now()}] Firestore: Question saved successfully with ID: ${docRef.id}`);
       return docRef.id;
     } catch (error) {
@@ -52,15 +59,21 @@ export class FirestoreService {
   }
 
   async updateQuestion(questionId, updateData) {
-    // 一時的にリトライを無効化
     try {
-      await this.db
+      // タイムアウトを設定してFirestore操作を実行
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Firestore update timeout')), 5000); // 5秒タイムアウト
+      });
+      
+      const operationPromise = this.db
         .collection('questions')
         .doc(questionId)
         .update({
           ...updateData,
           updatedAt: new Date(),
         });
+      
+      await Promise.race([operationPromise, timeoutPromise]);
     } catch (error) {
       console.error(`[${Date.now()}] Firestore: Failed to update question ${questionId}:`, error);
       throw error;

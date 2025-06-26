@@ -63,17 +63,20 @@ export const handleTemplateQuestionSubmission = async ({
   body,
   client,
 }) => {
+  // すぐにモーダルを閉じる（3秒以内にレスポンスが必要）
   await ack();
 
-  try {
-    const values = body.view.state.values;
-    const metadata = JSON.parse(body.view.private_metadata);
-    const { category } = metadata;
+  // 重い処理は非同期で実行
+  Promise.resolve().then(async () => {
+    try {
+      const values = body.view.state.values;
+      const metadata = JSON.parse(body.view.private_metadata);
+      const { category } = metadata;
 
-    console.log('Debug: Form values =', JSON.stringify(values, null, 2));
+      console.log('Debug: Form values =', JSON.stringify(values, null, 2));
 
-    // フォームデータを収集
-    const questionData = {
+      // フォームデータを収集
+      const questionData = {
       category,
       teamName: values.team_name?.team_name?.value || '',
       summary: values.question_summary?.summary?.value || '',
@@ -200,12 +203,13 @@ export const handleTemplateQuestionSubmission = async ({
     const parallelStart = Date.now();
     await Promise.all(parallelTasks);
     console.log(`[${Date.now()}] ✅ Template question processing completed! Total time: ${Date.now() - startTime}ms`);
-  } catch (error) {
-    console.error('Error handling template question submission:', error);
+    } catch (error) {
+      console.error('Error handling template question submission:', error);
 
-    await client.chat.postMessage({
-      channel: body.user.id,
-      text: '質問の送信中にエラーが発生しました。もう一度お試しください。',
-    });
-  }
+      await client.chat.postMessage({
+        channel: body.user.id,
+        text: '質問の送信中にエラーが発生しました。もう一度お試しください。',
+      });
+    }
+  });
 };

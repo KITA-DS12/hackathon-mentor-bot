@@ -55,18 +55,18 @@ export class RetryUtils {
 
   static async retryFirestoreOperation(operation) {
     return this.withRetry(operation, {
-      maxRetries: 3,
-      baseDelay: 500,
-      maxDelay: 5000,
+      maxRetries: 1, // リトライ回数を削減
+      baseDelay: 200, // 初回遅延を短縮
+      maxDelay: 1000, // 最大遅延を短縮
       shouldRetry: this.isRetryableError,
     });
   }
 
   static async retrySlackOperation(operation) {
     return this.withRetry(operation, {
-      maxRetries: 2,
-      baseDelay: 1000,
-      maxDelay: 3000,
+      maxRetries: 1, // リトライ回数を削減
+      baseDelay: 500, // 初回遅延を短縮
+      maxDelay: 2000, // 最大遅延を短縮
       shouldRetry: (error) => {
         if (this.isRetryableError(error)) return true;
         if (error.data?.error === 'ratelimited') return true;

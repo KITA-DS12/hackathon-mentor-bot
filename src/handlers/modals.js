@@ -17,29 +17,22 @@ const firestoreService = new FirestoreService();
  */
 const processQuestionSubmission = async (client, questionData) => {
   const startTime = Date.now();
+  const processId = Math.random().toString(36).substring(7); // プロセス追跡ID
+  
   try {
     console.log(
-      `[${Date.now()}] Processing question submission for user:`,
+      `[${Date.now()}] [${processId}] Starting question submission for user:`,
       questionData.userId
     );
 
-    // 🚀 STEP 1: Firestoreに質問を保存
-    console.log(`[${Date.now()}] Saving question to Firestore...`);
-    const firestoreStart = Date.now();
+    // 🚀 STEP 1: まずSlackに投稿（ユーザー体験を優先）
+    console.log(`[${Date.now()}] Creating message for immediate posting...`);
+    const tempQuestionId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    let questionId;
-    try {
-      questionId = await firestoreService.createQuestion(questionData);
-      console.log(`[${Date.now()}] ✅ Question saved to Firestore with ID: ${questionId} (${Date.now() - firestoreStart}ms)`);
-    } catch (firestoreError) {
-      console.error(`[${Date.now()}] ❌ Firestore save failed after ${Date.now() - firestoreStart}ms:`, firestoreError);
-      throw firestoreError;
-    }
-
     // 🚀 STEP 2: 並列でメッセージ作成とメンション生成
     console.log(`[${Date.now()}] Creating message and generating mentions in parallel...`);
     const [questionMessage, mentionText] = await Promise.all([
-      Promise.resolve(createQuestionMessage(questionData, questionId)),
+      Promise.resolve(createQuestionMessage(questionData, tempQuestionId)),
       generateMentionText(questionData.category)
     ]);
 
@@ -84,15 +77,23 @@ const processQuestionSubmission = async (client, questionData) => {
       }
     }
 
+    // 🚀 STEP 3: Slackに投稿後、Firestoreに保存
+    console.log(`[${Date.now()}] Saving question to Firestore after successful posting...`);
+    let questionId;
+    try {
+      questionId = await firestoreService.createQuestion({
+        ...questionData,
+        messageTs: questionResult.ts,
+      });
+      console.log(`[${Date.now()}] ✅ Question saved to Firestore with ID: ${questionId}`);
+    } catch (firestoreError) {
+      console.error(`[${Date.now()}] ❌ Firestore save failed:`, firestoreError);
+      // Firestoreエラーでも処理を続行（Slackへの投稿は成功しているため）
+      questionId = tempQuestionId;
+    }
+
     // 並列処理で高速化
     const parallelTasks = [];
-
-    // Firestoreの質問データにメッセージタイムスタンプを更新
-    parallelTasks.push(
-      firestoreService.updateQuestion(questionId, {
-        messageTs: questionResult.ts,
-      })
-    );
 
     // メンターチャンネルに投稿していない場合のみ通知を送信
     if (finalTargetChannelId !== config.app.mentorChannelId) {
@@ -148,26 +149,28 @@ export const handleQuestionModalSubmission = withErrorHandling(
       sourceChannelId
     );
 
-    // 質問処理
-    try {
-      // モーダルを閉じて処理開始
-      await ack();
+    // すぐにモーダルを閉じる（3秒以内にレスポンスが必要）
+    await ack();
 
-      console.log('Processing question submission for user:', body.user.id);
-      await processQuestionSubmission(client, questionData);
-      console.log('Question submission processed successfully');
-    } catch (error) {
-      console.error('Error processing question submission:', error);
-      // エラーが発生した場合はユーザーに通知
+    // 重い処理は非同期で実行（Promise.resolveで次のイベントループへ）
+    Promise.resolve().then(async () => {
       try {
-        await client.chat.postMessage({
-          channel: body.user.id,
-          text: '❌ 質問の処理中にエラーが発生しました。もう一度お試しください。',
-        });
-      } catch (dmError) {
-        console.error('Error sending error message to user:', dmError);
+        console.log('Processing question submission for user:', body.user.id);
+        await processQuestionSubmission(client, questionData);
+        console.log('Question submission processed successfully');
+      } catch (error) {
+        console.error('Error processing question submission:', error);
+        // エラーが発生した場合はユーザーに通知
+        try {
+          await client.chat.postMessage({
+            channel: body.user.id,
+            text: '❌ 質問の処理中にエラーが発生しました。もう一度お試しください。',
+          });
+        } catch (dmError) {
+          console.error('Error sending error message to user:', dmError);
+        }
       }
-    }
+    });
   },
   { client: null, userId: null }, // contextは実行時に設定
   ERROR_MESSAGES.QUESTION_SUBMISSION
