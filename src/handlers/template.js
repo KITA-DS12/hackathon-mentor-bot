@@ -141,8 +141,11 @@ export const handleTemplateQuestionSubmission = async ({
       ],
     };
 
+    // Firestoreに質問を保存
+    const questionId = await firestoreService.createQuestion(questionRecord);
+
     // チームチャンネルに質問投稿
-    const questionMessage = createQuestionMessage(questionRecord, 'temp_template_' + Date.now());
+    const questionMessage = createQuestionMessage(questionRecord, questionId);
     const mentionText = await generateMentionText(questionRecord.category);
     
     const targetChannelId = questionRecord.sourceChannelId || config.app.mentorChannelId;
@@ -162,18 +165,12 @@ export const handleTemplateQuestionSubmission = async ({
       }
     }
 
-    // 質問データにタイムスタンプを追加
-    const questionRecordWithTs = {
-      ...questionRecord,
-      messageTs: questionResult.ts,
-    };
-
-    // Firestoreに質問を保存
-    const questionId = await firestoreService.createQuestion(questionRecordWithTs);
+    // Firestoreの質問データにメッセージタイムスタンプを更新
+    await firestoreService.updateQuestion(questionId, { messageTs: questionResult.ts });
 
     // メンターチャンネルに投稿していない場合のみ通知を送信
     if (finalTargetChannelId !== config.app.mentorChannelId) {
-      await notifyMentorChannel(client, questionRecordWithTs, questionId, questionResult.ts, mentionText);
+      await notifyMentorChannel(client, questionRecord, questionId, questionResult.ts, mentionText);
     }
 
     // 質問者にDMで確認

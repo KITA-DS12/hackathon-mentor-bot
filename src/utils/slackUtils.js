@@ -203,15 +203,6 @@ export const notifyMentorChannel = async (client, questionData, questionId, ques
           type: 'button',
           text: {
             type: 'plain_text',
-            text: '詳細確認',
-          },
-          action_id: 'check_details',
-          value: questionId,
-        },
-        {
-          type: 'button',
-          text: {
-            type: 'plain_text',
             text: '質問を見る',
           },
           url: `https://slack.com/app_redirect?channel=${questionData.sourceChannelId}&message_ts=${questionMessageTs}`,
