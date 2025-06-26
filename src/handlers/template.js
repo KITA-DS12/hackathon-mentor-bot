@@ -19,15 +19,12 @@ export const handleCategorySelectionSubmission = async ({
   body,
   client,
 }) => {
-  await ack();
-
   try {
     const values = body.view.state.values;
     const selectedCategory =
       values.category_selection.category.selected_option.value;
 
     console.log('Debug: Selected category =', selectedCategory);
-    console.log('Debug: View ID =', body.view.id);
 
     // 前のモーダルからチャンネル情報を取得
     const metadata = body.view.private_metadata
@@ -43,16 +40,17 @@ export const handleCategorySelectionSubmission = async ({
 
     console.log('Debug: Creating template modal for category:', selectedCategory);
 
-    // テンプレート質問フォームを表示（既存モーダルを更新）
-    await client.views.update({
-      view_id: body.view.id,
+    // カテゴリ選択を確認してモーダルを更新
+    await ack({
+      response_action: 'update',
       view: modal,
     });
 
-    console.log('Debug: Modal updated successfully');
+    console.log('Debug: Modal updated successfully via ack');
   } catch (error) {
     console.error('Error handling category selection:', error);
-
+    
+    await ack();
     await client.chat.postMessage({
       channel: body.user.id,
       text: 'カテゴリ選択の処理中にエラーが発生しました。もう一度お試しください。',
