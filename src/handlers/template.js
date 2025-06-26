@@ -39,8 +39,8 @@ export const handleCategorySelectionSubmission = async ({
     });
 
     // テンプレート質問フォームを表示
-    await client.views.open({
-      trigger_id: body.trigger_id,
+    await client.views.update({
+      view_id: body.view.id,
       view: modal,
     });
   } catch (error) {
