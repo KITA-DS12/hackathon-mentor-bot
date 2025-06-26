@@ -39,7 +39,7 @@ export const createQuestionMessage = (question, questionId) => {
         type: 'header',
         text: {
           type: 'plain_text',
-          text: `${statusEmoji} 新しい質問 - ${question.category}`,
+          text: `${statusEmoji} ${question.status === 'completed' ? '解決済み' : '新しい質問'} - ${question.category}`,
         },
       },
       {

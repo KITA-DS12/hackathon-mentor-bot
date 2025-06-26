@@ -442,6 +442,21 @@ export const handleCompleteResponse = withErrorHandling(
       channel: question.userId,
       text: `<@${mentorId}>があなたの質問への対応を完了しました。ありがとうございました！`,
     });
+
+    // 元の質問メッセージを更新して解決済み表示
+    if (question.messageTs) {
+      const { createQuestionMessage } = await import('../utils/message.js');
+      const updatedMessage = createQuestionMessage(
+        { ...question, status: QUESTION_STATUS.COMPLETED },
+        questionId
+      );
+      
+      await client.chat.update({
+        channel: question.sourceChannelId || body.channel.id,
+        ts: question.messageTs,
+        ...updatedMessage,
+      });
+    }
   },
   (args) => ({
     client: args[0].client,
@@ -533,6 +548,21 @@ export const handleMarkResolvedByUser = withErrorHandling(
         channel: body.channel.id,
         thread_ts: question.threadTs,
         text: `🎉 <@${userId}>が質問を解決済みとしてマークしました。お疲れ様でした！`,
+      });
+    }
+
+    // 元の質問メッセージを更新して解決済み表示
+    if (question.messageTs) {
+      const { createQuestionMessage } = await import('../utils/message.js');
+      const updatedMessage = createQuestionMessage(
+        { ...question, status: QUESTION_STATUS.COMPLETED },
+        questionId
+      );
+      
+      await client.chat.update({
+        channel: question.sourceChannelId || body.channel.id,
+        ts: question.messageTs,
+        ...updatedMessage,
       });
     }
   },
