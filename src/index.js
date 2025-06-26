@@ -15,15 +15,9 @@ import {
   handleSubcategorySelectionSubmission,
   handleTemplateQuestionSubmission,
 } from './handlers/template.js';
-import {
-  handleQuestionModalSubmission,
-} from './handlers/modals.js';
-import {
-  handleMentorRegistrationSubmission,
-} from './handlers/mentorRegistration.js';
-import {
-  handleQuestionTypeSelectionSubmission,
-} from './handlers/questionType.js';
+import { handleQuestionModalSubmission } from './handlers/modals.js';
+import { handleMentorRegistrationSubmission } from './handlers/mentorRegistration.js';
+import { handleQuestionTypeSelectionSubmission } from './handlers/questionType.js';
 import {
   handleConfirmUnregisterAction,
   handleCancelUnregisterAction,
@@ -45,16 +39,24 @@ import {
 // 環境変数チェック
 if (!config.slack.botToken || !config.slack.signingSecret) {
   console.error('❌ 必要な環境変数が設定されていません:');
-  console.error('  SLACK_BOT_TOKEN:', config.slack.botToken ? '✅ 設定済み' : '❌ 未設定');
-  console.error('  SLACK_SIGNING_SECRET:', config.slack.signingSecret ? '✅ 設定済み' : '❌ 未設定');
+  console.error(
+    '  SLACK_BOT_TOKEN:',
+    config.slack.botToken ? '✅ 設定済み' : '❌ 未設定'
+  );
+  console.error(
+    '  SLACK_SIGNING_SECRET:',
+    config.slack.signingSecret ? '✅ 設定済み' : '❌ 未設定'
+  );
   console.error('');
   console.error('🔧 環境変数を設定してください:');
   console.error('  - Cloud Console: https://console.cloud.google.com/run');
   console.error('  - または make set-env コマンドを使用');
   console.error('');
-  
+
   // 環境変数が未設定でもサーバーは起動する（ヘルスチェック対応）
-  console.log('⚠️  環境変数が未設定ですが、サーバーを起動します（設定後に再起動してください）');
+  console.log(
+    '⚠️  環境変数が未設定ですが、サーバーを起動します（設定後に再起動してください）'
+  );
 }
 
 // Expressレシーバーを明示的に作成
@@ -74,12 +76,11 @@ app.receiver.router.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     version: '1.0.0',
     uptime: process.uptime(),
-    memory: process.memoryUsage()
+    memory: process.memoryUsage(),
   };
-  
+
   res.status(200).json(healthData);
 });
-
 
 // Slash Commands
 app.command('/mentor-help', handleMentorHelpCommand);
@@ -97,7 +98,10 @@ app.view('category_selection_modal', handleCategorySelectionSubmission);
 app.view('subcategory_selection_modal', handleSubcategorySelectionSubmission);
 app.view('template_question_modal', handleTemplateQuestionSubmission);
 app.view('mentor_registration_modal', handleMentorRegistrationSubmission);
-app.view('question_type_selection_modal', handleQuestionTypeSelectionSubmission);
+app.view(
+  'question_type_selection_modal',
+  handleQuestionTypeSelectionSubmission
+);
 
 // Button Actions
 app.action('start_response', handleStartResponse);
@@ -129,8 +133,10 @@ app.error((error) => {
 
     console.log('⚡️ Hackathon Mentor Bot is running!');
     console.log(`🚀 Port: ${config.app.port}`);
-    console.log(`📡 Mentor Channel ID: ${config.app.mentorChannelId || '未設定'}`);
-    
+    console.log(
+      `📡 Mentor Channel ID: ${config.app.mentorChannelId || '未設定'}`
+    );
+
     if (!config.slack.botToken || !config.slack.signingSecret) {
       console.log('');
       console.log('🔧 次のステップ:');

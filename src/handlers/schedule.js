@@ -4,7 +4,6 @@ import { MENTOR_AVAILABILITY } from '../config/constants.js';
 
 const firestoreService = new FirestoreService();
 
-
 export const handleStatusModalSubmission = async ({ ack, body, client }) => {
   await ack();
 

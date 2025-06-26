@@ -33,7 +33,9 @@ export const createQuestionModal = (freeMode = false) => {
         multiline: true,
         placeholder: {
           type: 'plain_text',
-          text: freeMode ? '何でもお気軽に質問してください！' : '例：ログイン機能でエラーが出て困っています',
+          text: freeMode
+            ? '何でもお気軽に質問してください！'
+            : '例：ログイン機能でエラーが出て困っています',
         },
       },
       label: {
@@ -135,7 +137,7 @@ export const createQuestionModal = (freeMode = false) => {
           type: 'plain_text',
           text: '相談方法',
         },
-      },
+      }
     );
   }
 
@@ -209,7 +211,6 @@ export const createQuestionModal = (freeMode = false) => {
     blocks: baseBlocks,
   };
 };
-
 
 export const createMentorRegistrationModal = () => {
   return {

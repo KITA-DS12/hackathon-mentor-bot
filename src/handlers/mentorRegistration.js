@@ -2,18 +2,24 @@ import { FirestoreService } from '../services/firestore.js';
 
 const firestoreService = new FirestoreService();
 
-export const handleMentorRegistrationSubmission = async ({ ack, body, view, client }) => {
+export const handleMentorRegistrationSubmission = async ({
+  ack,
+  body,
+  view,
+  client,
+}) => {
   await ack();
 
   try {
     const userId = body.user.id;
     const userName = body.user.username || body.user.name;
-    
+
     // フォームデータを取得
     const values = view.state.values;
     const mentorName = values.mentor_name.name.value;
     const bio = values.mentor_bio?.bio?.value || '';
-    const availability = values.initial_availability.availability.selected_option.value;
+    const availability =
+      values.initial_availability.availability.selected_option.value;
 
     // メンター情報をFirestoreに保存
     const mentorData = {
@@ -29,23 +35,26 @@ export const handleMentorRegistrationSubmission = async ({ ack, body, view, clie
     await firestoreService.createOrUpdateMentor(userId, mentorData);
 
     // 登録完了メッセージを送信
-    const statusEmoji = availability === 'available' ? '🟢' : 
-                       availability === 'busy' ? '🟡' : '🔴';
+    const statusEmoji =
+      availability === 'available'
+        ? '🟢'
+        : availability === 'busy'
+          ? '🟡'
+          : '🔴';
 
     await client.chat.postMessage({
       channel: body.user.id, // DMで通知
-      text: `✅ **メンター登録が完了しました！**\n\n` +
-            `👤 **名前**: ${mentorName}\n` +
-            `${statusEmoji} **ステータス**: ${getStatusText(availability)}\n` +
-            `${bio ? `💬 **自己紹介**: ${bio}\n` : ''}` +
-            `\n質問が投稿された際にメンションを受け取ります。\n` +
-            `ステータス変更は \`/mentor-status\` で行えます。`,
+      text:
+        `✅ **メンター登録が完了しました！**\n\n` +
+        `👤 **名前**: ${mentorName}\n` +
+        `${statusEmoji} **ステータス**: ${getStatusText(availability)}\n` +
+        `${bio ? `💬 **自己紹介**: ${bio}\n` : ''}` +
+        `\n質問が投稿された際にメンションを受け取ります。\n` +
+        `ステータス変更は \`/mentor-status\` で行えます。`,
     });
-
-
   } catch (error) {
     console.error('Error handling mentor registration:', error);
-    
+
     await client.chat.postMessage({
       channel: body.user.id,
       text: '❌ メンター登録中にエラーが発生しました。再度お試しください。',

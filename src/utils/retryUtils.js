@@ -7,7 +7,7 @@ export class RetryUtils {
       baseDelay = 1000,
       maxDelay = 10000,
       backoffFactor = 2,
-      shouldRetry = (error) => true
+      shouldRetry = (error) => true,
     } = options;
 
     let lastError;
@@ -15,9 +15,9 @@ export class RetryUtils {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         return await operation();
-      } catch (error) {
-        lastError = error;
-        
+      } catch (attemptError) {
+        lastError = attemptError;
+
         if (attempt === maxRetries || !shouldRetry(error)) {
           throw error;
         }
@@ -26,8 +26,11 @@ export class RetryUtils {
           baseDelay * Math.pow(backoffFactor, attempt),
           maxDelay
         );
-        
-        console.log(`Operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`, error.message);
+
+        console.log(
+          `Operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`,
+          error.message
+        );
         await setTimeout(delay);
       }
     }
@@ -42,11 +45,11 @@ export class RetryUtils {
     if (error.message?.includes('timeout')) return true;
     if (error.message?.includes('connection')) return true;
     if (error.message?.includes('network')) return true;
-    
+
     const statusCode = error.status || error.statusCode;
     if (statusCode >= 500 && statusCode < 600) return true;
     if (statusCode === 429) return true;
-    
+
     return false;
   }
 
@@ -55,7 +58,7 @@ export class RetryUtils {
       maxRetries: 3,
       baseDelay: 500,
       maxDelay: 5000,
-      shouldRetry: this.isRetryableError
+      shouldRetry: this.isRetryableError,
     });
   }
 
@@ -68,7 +71,7 @@ export class RetryUtils {
         if (this.isRetryableError(error)) return true;
         if (error.data?.error === 'ratelimited') return true;
         return false;
-      }
+      },
     });
   }
 }

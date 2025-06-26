@@ -9,7 +9,7 @@ import { config } from '../config/index.js';
 export const formatTimestamp = (timestamp) => {
   try {
     let date;
-    
+
     if (!timestamp) {
       date = new Date(); // createdAtがない場合は現在時刻を使用
     } else if (timestamp instanceof Date) {
@@ -21,7 +21,7 @@ export const formatTimestamp = (timestamp) => {
     } else {
       date = new Date(timestamp); // 文字列やミリ秒を試す
     }
-    
+
     const unixTimestamp = Math.floor(date.getTime() / 1000);
     return `<!date^${unixTimestamp}^{date_short_pretty} {time}|${date.toLocaleString()}>`;
   } catch (error) {
@@ -195,7 +195,9 @@ export const createStatusUpdateMessage = (
     case 'in_progress':
       // 複数メンター対応
       if (question.assignedMentors && question.assignedMentors.length > 0) {
-        const mentorMentions = question.assignedMentors.map(id => `<@${id}>`).join(', ');
+        const mentorMentions = question.assignedMentors
+          .map((id) => `<@${id}>`)
+          .join(', ');
         statusText = `対応中 (担当: ${mentorMentions})`;
       } else {
         statusText = `対応中 (担当: <@${mentor}>)`;
@@ -279,7 +281,7 @@ export const createThreadStatusMessage = (questionId, status) => {
         type: 'mrkdwn',
         text: `*対応状況が更新されました*`,
       },
-    }
+    },
   ];
 
   // 状態に応じてボタンを追加

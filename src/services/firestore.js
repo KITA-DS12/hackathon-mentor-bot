@@ -121,7 +121,7 @@ export class FirestoreService {
         .where('status', '==', status)
         .orderBy('createdAt', 'desc')
         .get();
-      
+
       return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
       console.error('Error getting questions by status:', error);
@@ -135,7 +135,7 @@ export class FirestoreService {
         .collection('questions')
         .orderBy('createdAt', 'desc')
         .get();
-      
+
       return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
       console.error('Error getting all questions:', error);
@@ -153,16 +153,18 @@ export class FirestoreService {
     }
   }
 
-
   async createOrUpdateMentor(userId, mentorData) {
     try {
-      await this.db.collection('mentors').doc(userId).set(
-        {
-          ...mentorData,
-          updatedAt: new Date(),
-        },
-        { merge: true }
-      );
+      await this.db
+        .collection('mentors')
+        .doc(userId)
+        .set(
+          {
+            ...mentorData,
+            updatedAt: new Date(),
+          },
+          { merge: true }
+        );
     } catch (error) {
       console.error('Error creating/updating mentor:', error);
       throw error;
@@ -195,16 +197,18 @@ export class FirestoreService {
     }
   }
 
-
   async createMentor(mentorData) {
     try {
       const { userId, ...data } = mentorData;
-      await this.db.collection('mentors').doc(userId).set({
-        ...data,
-        userId,
-        registeredAt: data.registeredAt || new Date(),
-        updatedAt: data.updatedAt || new Date(),
-      });
+      await this.db
+        .collection('mentors')
+        .doc(userId)
+        .set({
+          ...data,
+          userId,
+          registeredAt: data.registeredAt || new Date(),
+          updatedAt: data.updatedAt || new Date(),
+        });
       return userId;
     } catch (error) {
       console.error('Error creating mentor:', error);
@@ -214,10 +218,13 @@ export class FirestoreService {
 
   async updateMentor(userId, updateData) {
     try {
-      await this.db.collection('mentors').doc(userId).update({
-        ...updateData,
-        updatedAt: new Date(),
-      });
+      await this.db
+        .collection('mentors')
+        .doc(userId)
+        .update({
+          ...updateData,
+          updatedAt: new Date(),
+        });
     } catch (error) {
       console.error('Error updating mentor:', error);
       throw error;

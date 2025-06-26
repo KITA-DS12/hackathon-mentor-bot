@@ -28,7 +28,7 @@ steps:
       - '--concurrency'
       - '20'
       - '--min-instances'
-      - '0'
+      - '1'
       - '--max-instances'
       - '10'
       - '--set-env-vars'

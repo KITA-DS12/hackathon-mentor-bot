@@ -11,7 +11,12 @@ import { RetryUtils } from './retryUtils.js';
  * @param {Object} questionMessage - 質問メッセージオブジェクト
  * @param {string} mentionText - メンション文
  */
-export const postQuestionToChannel = async (client, channelId, questionMessage, mentionText) => {
+export const postQuestionToChannel = async (
+  client,
+  channelId,
+  questionMessage,
+  mentionText
+) => {
   return RetryUtils.retrySlackOperation(async () => {
     return await client.chat.postMessage({
       channel: channelId,
@@ -27,8 +32,17 @@ export const postQuestionToChannel = async (client, channelId, questionMessage, 
  * @param {Object} questionMessage - 質問メッセージオブジェクト
  * @param {string} mentionText - メンション文
  */
-export const postQuestionToMentorChannel = async (client, questionMessage, mentionText) => {
-  return postQuestionToChannel(client, config.app.mentorChannelId, questionMessage, mentionText);
+export const postQuestionToMentorChannel = async (
+  client,
+  questionMessage,
+  mentionText
+) => {
+  return postQuestionToChannel(
+    client,
+    config.app.mentorChannelId,
+    questionMessage,
+    mentionText
+  );
 };
 
 /**
@@ -54,18 +68,24 @@ export const sendUserConfirmation = async (client, userId, message) => {
  * @param {string} text - メッセージテキスト
  * @param {Array} blocks - Slackブロック（オプション）
  */
-export const sendEphemeralMessage = async (client, channelId, userId, text, blocks = null) => {
+export const sendEphemeralMessage = async (
+  client,
+  channelId,
+  userId,
+  text,
+  blocks = null
+) => {
   return RetryUtils.retrySlackOperation(async () => {
     const payload = {
       channel: channelId,
       user: userId,
       text,
     };
-    
+
     if (blocks) {
       payload.blocks = blocks;
     }
-    
+
     return await client.chat.postEphemeral(payload);
   });
 };
@@ -83,11 +103,11 @@ export const openModal = async (client, triggerId, view, metadata = null) => {
       trigger_id: triggerId,
       view,
     };
-    
+
     if (metadata) {
       payload.view.private_metadata = JSON.stringify(metadata);
     }
-    
+
     return await client.views.open(payload);
   });
 };
@@ -100,18 +120,24 @@ export const openModal = async (client, triggerId, view, metadata = null) => {
  * @param {string} text - 新しいテキスト
  * @param {Array} blocks - 新しいブロック（オプション）
  */
-export const updateMessage = async (client, channelId, timestamp, text, blocks = null) => {
+export const updateMessage = async (
+  client,
+  channelId,
+  timestamp,
+  text,
+  blocks = null
+) => {
   return RetryUtils.retrySlackOperation(async () => {
     const payload = {
       channel: channelId,
       ts: timestamp,
       text,
     };
-    
+
     if (blocks) {
       payload.blocks = blocks;
     }
-    
+
     return await client.chat.update(payload);
   });
 };
@@ -124,7 +150,13 @@ export const updateMessage = async (client, channelId, timestamp, text, blocks =
  * @param {string} questionMessageTs - 元質問のタイムスタンプ
  * @param {string} mentionText - メンション文
  */
-export const notifyMentorChannel = async (client, questionData, questionId, questionMessageTs, mentionText) => {
+export const notifyMentorChannel = async (
+  client,
+  questionData,
+  questionId,
+  questionMessageTs,
+  mentionText
+) => {
   try {
     const notificationBlocks = [
       {
@@ -147,7 +179,7 @@ export const notifyMentorChannel = async (client, questionData, questionId, ques
           type: 'mrkdwn',
           text: `**質問内容**:\n${questionData.content}`,
         },
-      }
+      },
     ];
 
     // 任意項目を追加
@@ -196,7 +228,7 @@ export const notifyMentorChannel = async (client, questionData, questionId, ques
           value: JSON.stringify({
             questionId,
             sourceChannelId: questionData.sourceChannelId,
-            messageTs: questionMessageTs
+            messageTs: questionMessageTs,
           }),
         },
         {
@@ -206,8 +238,8 @@ export const notifyMentorChannel = async (client, questionData, questionId, ques
             text: '質問を見る',
           },
           url: `https://slack.com/app_redirect?channel=${questionData.sourceChannelId}&message_ts=${questionMessageTs}`,
-          action_id: 'view_question'
-        }
+          action_id: 'view_question',
+        },
       ],
     });
 

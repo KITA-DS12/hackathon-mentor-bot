@@ -4,21 +4,21 @@ import { URGENCY_LEVELS, CONSULTATION_TYPES } from '../config/constants.js';
 export const createCategorySelectionModal = () => {
   return {
     type: 'modal',
-    callback_id: 'category_selection_modal',
+    callback_id: 'template_question_modal',
     title: {
       type: 'plain_text',
       text: 'メンターに質問する',
     },
     submit: {
       type: 'plain_text',
-      text: '次へ',
+      text: '質問フォームを開く',
     },
     blocks: [
       {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: '*まず、質問のカテゴリを選択してください*\nカテゴリに応じて最適な質問フォームを表示します。',
+          text: '*質問のカテゴリを選択してください*\nカテゴリに応じて最適な質問フォームを表示します。',
         },
       },
       {
@@ -31,13 +31,20 @@ export const createCategorySelectionModal = () => {
             type: 'plain_text',
             text: 'カテゴリを選択',
           },
-          options: Object.keys(QUESTION_TEMPLATES).map((category) => ({
-            text: {
-              type: 'plain_text',
-              text: category,
-            },
-            value: category,
-          })),
+          options: Object.keys(QUESTION_TEMPLATES).map((category) => {
+            const template = QUESTION_TEMPLATES[category];
+            return {
+              text: {
+                type: 'plain_text',
+                text: category,
+              },
+              value: category,
+              description: {
+                type: 'plain_text',
+                text: template.description,
+              },
+            };
+          }),
         },
         label: {
           type: 'plain_text',
@@ -48,72 +55,15 @@ export const createCategorySelectionModal = () => {
   };
 };
 
-export const createSubcategorySelectionModal = (selectedCategory) => {
-  const subcategories = Object.keys(QUESTION_TEMPLATES[selectedCategory]);
-
-  return {
-    type: 'modal',
-    callback_id: 'subcategory_selection_modal',
-    title: {
-      type: 'plain_text',
-      text: 'サブカテゴリ選択',
-    },
-    submit: {
-      type: 'plain_text',
-      text: '質問フォームを開く',
-    },
-    private_metadata: JSON.stringify({ selectedCategory }),
-    blocks: [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `*${selectedCategory}* の詳細カテゴリを選択してください`,
-        },
-      },
-      {
-        type: 'input',
-        block_id: 'subcategory_selection',
-        element: {
-          type: 'static_select',
-          action_id: 'subcategory',
-          placeholder: {
-            type: 'plain_text',
-            text: '詳細カテゴリを選択',
-          },
-          options: subcategories.map((subcategory) => {
-            const template = QUESTION_TEMPLATES[selectedCategory][subcategory];
-            return {
-              text: {
-                type: 'plain_text',
-                text: subcategory,
-              },
-              value: subcategory,
-              description: {
-                type: 'plain_text',
-                text: template.description,
-              },
-            };
-          }),
-        },
-        label: {
-          type: 'plain_text',
-          text: '詳細カテゴリ',
-        },
-      },
-    ],
-  };
-};
-
-export const createTemplateQuestionModal = (category, subcategory) => {
-  const template = QUESTION_TEMPLATES[category][subcategory];
+export const createTemplateQuestionModal = (category) => {
+  const template = QUESTION_TEMPLATES[category];
 
   const blocks = [
     {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `*${category} > ${subcategory}*\n${template.description}`,
+        text: `*${category}*\n${template.description}`,
       },
     },
     {
@@ -253,22 +203,22 @@ export const createTemplateQuestionModal = (category, subcategory) => {
     callback_id: 'template_question_modal',
     title: {
       type: 'plain_text',
-      text: `${subcategory} - 質問`,
+      text: `${category} - 質問`,
     },
     submit: {
       type: 'plain_text',
       text: '質問を送信',
     },
-    private_metadata: JSON.stringify({ category, subcategory }),
+    private_metadata: JSON.stringify({ category }),
     blocks,
   };
 };
 
 export const formatTemplateQuestion = (questionData) => {
-  const { category, subcategory } = questionData;
-  const templateConfig = QUESTION_TEMPLATES[category][subcategory];
+  const { category } = questionData;
+  const templateConfig = QUESTION_TEMPLATES[category];
 
-  let formattedContent = `📋 *${category} > ${subcategory}*\n\n`;
+  let formattedContent = `📋 *${category}*\n\n`;
   formattedContent += `*【チーム名】*\n${questionData.teamName}\n\n`;
   formattedContent += `*【問題サマリー】*\n${questionData.summary}\n\n`;
 

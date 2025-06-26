@@ -69,7 +69,7 @@ export const handleStartResponse = withErrorHandling(
     // 元のチャンネルでスレッドを作成
     const targetChannelId = sourceChannelId || question.sourceChannelId;
     const targetMessageTs = messageTs || question.messageTs;
-    
+
     if (!targetChannelId || !targetMessageTs) {
       await client.chat.postEphemeral({
         channel: body.channel.id,
@@ -83,7 +83,7 @@ export const handleStartResponse = withErrorHandling(
       questionId,
       question.content
     );
-    
+
     const threadResult = await client.chat.postMessage({
       channel: targetChannelId,
       thread_ts: targetMessageTs,
@@ -113,12 +113,11 @@ export const handleStartResponse = withErrorHandling(
       channel: question.userId,
       text: `<@${mentorId}>があなたの質問に対応を開始しました。<#${targetChannelId}>のスレッドをご確認ください。`,
     });
-
   },
-  (args) => ({ 
-    client: args[0].client, 
-    userId: args[0].body.user.id, 
-    channelId: args[0].body.channel.id 
+  (args) => ({
+    client: args[0].client,
+    userId: args[0].body.user.id,
+    channelId: args[0].body.channel.id,
   }),
   ERROR_MESSAGES.START_RESPONSE
 );
@@ -162,10 +161,10 @@ ${question.errorMessage ? `*エラーメッセージ:*\n\`\`\`${question.errorMe
       text: detailsText,
     });
   },
-  (args) => ({ 
-    client: args[0].client, 
-    userId: args[0].body.user.id, 
-    channelId: args[0].body.channel.id 
+  (args) => ({
+    client: args[0].client,
+    userId: args[0].body.user.id,
+    channelId: args[0].body.channel.id,
   }),
   ERROR_MESSAGES.CHECK_DETAILS
 );
@@ -207,7 +206,10 @@ export const handlePauseResponse = withErrorHandling(
 
     // スレッドに再開ボタン付きメッセージを投稿
     if (question.threadTs) {
-      const threadMessage = createThreadStatusMessage(questionId, QUESTION_STATUS.PAUSED);
+      const threadMessage = createThreadStatusMessage(
+        questionId,
+        QUESTION_STATUS.PAUSED
+      );
       await client.chat.postMessage({
         channel: body.channel.id,
         thread_ts: question.threadTs,
@@ -216,10 +218,10 @@ export const handlePauseResponse = withErrorHandling(
       });
     }
   },
-  (args) => ({ 
-    client: args[0].client, 
-    userId: args[0].body.user.id, 
-    channelId: args[0].body.channel.id 
+  (args) => ({
+    client: args[0].client,
+    userId: args[0].body.user.id,
+    channelId: args[0].body.channel.id,
   }),
   ERROR_MESSAGES.PAUSE_RESPONSE
 );
@@ -252,7 +254,10 @@ export const handleResumeResponse = withErrorHandling(
     }
 
     // 複数メンター対応：既に担当者リストに含まれているかチェック
-    if (question.assignedMentors && !question.assignedMentors.includes(mentorId)) {
+    if (
+      question.assignedMentors &&
+      !question.assignedMentors.includes(mentorId)
+    ) {
       // 新しいメンターとして追加
       await firestoreService.updateQuestion(questionId, {
         status: QUESTION_STATUS.IN_PROGRESS,
@@ -290,7 +295,10 @@ export const handleResumeResponse = withErrorHandling(
 
     // スレッドに中断・完了ボタン付きメッセージを投稿
     if (question.threadTs) {
-      const threadMessage = createThreadStatusMessage(questionId, QUESTION_STATUS.IN_PROGRESS);
+      const threadMessage = createThreadStatusMessage(
+        questionId,
+        QUESTION_STATUS.IN_PROGRESS
+      );
       await client.chat.postMessage({
         channel: body.channel.id,
         thread_ts: question.threadTs,
@@ -299,10 +307,10 @@ export const handleResumeResponse = withErrorHandling(
       });
     }
   },
-  (args) => ({ 
-    client: args[0].client, 
-    userId: args[0].body.user.id, 
-    channelId: args[0].body.channel.id 
+  (args) => ({
+    client: args[0].client,
+    userId: args[0].body.user.id,
+    channelId: args[0].body.channel.id,
   }),
   ERROR_MESSAGES.RESUME_RESPONSE
 );
@@ -325,7 +333,10 @@ export const handleReleaseAssignment = withErrorHandling(
     }
 
     // 担当者の確認（担当者本人のみ解除可能）
-    if (!question.assignedMentors || !question.assignedMentors.includes(mentorId)) {
+    if (
+      !question.assignedMentors ||
+      !question.assignedMentors.includes(mentorId)
+    ) {
       await client.chat.postEphemeral({
         channel: body.channel.id,
         user: body.user.id,
@@ -335,7 +346,10 @@ export const handleReleaseAssignment = withErrorHandling(
     }
 
     // 対応中または中断中の質問のみ解除可能
-    if (question.status !== QUESTION_STATUS.IN_PROGRESS && question.status !== QUESTION_STATUS.PAUSED) {
+    if (
+      question.status !== QUESTION_STATUS.IN_PROGRESS &&
+      question.status !== QUESTION_STATUS.PAUSED
+    ) {
       await client.chat.postEphemeral({
         channel: body.channel.id,
         user: body.user.id,
@@ -350,20 +364,19 @@ export const handleReleaseAssignment = withErrorHandling(
     };
 
     // 担当メンターが0人になる場合は待機中に戻す
-    const remainingMentors = question.assignedMentors.filter(id => id !== mentorId);
+    const remainingMentors = question.assignedMentors.filter(
+      (id) => id !== mentorId
+    );
     if (remainingMentors.length === 0) {
       updateData.status = QUESTION_STATUS.WAITING;
     }
 
     await firestoreService.updateQuestion(questionId, updateData);
 
-    const newStatus = remainingMentors.length === 0 ? QUESTION_STATUS.WAITING : question.status;
-    
-    await firestoreService.addStatusHistory(
-      questionId,
-      newStatus,
-      mentorId
-    );
+    const newStatus =
+      remainingMentors.length === 0 ? QUESTION_STATUS.WAITING : question.status;
+
+    await firestoreService.addStatusHistory(questionId, newStatus, mentorId);
 
     const statusMessage = createStatusUpdateMessage(
       { ...question, status: newStatus, assignedMentors: remainingMentors },
@@ -377,19 +390,20 @@ export const handleReleaseAssignment = withErrorHandling(
       ...statusMessage,
     });
 
-    const notificationText = remainingMentors.length === 0 
-      ? `<@${mentorId}>が担当を解除しました。他のメンターが対応可能になりました。`
-      : `<@${mentorId}>が担当を解除しました。引き続き他のメンターが対応中です。`;
-    
+    const notificationText =
+      remainingMentors.length === 0
+        ? `<@${mentorId}>が担当を解除しました。他のメンターが対応可能になりました。`
+        : `<@${mentorId}>が担当を解除しました。引き続き他のメンターが対応中です。`;
+
     await client.chat.postMessage({
       channel: question.userId,
       text: notificationText,
     });
   },
-  (args) => ({ 
-    client: args[0].client, 
-    userId: args[0].body.user.id, 
-    channelId: args[0].body.channel.id 
+  (args) => ({
+    client: args[0].client,
+    userId: args[0].body.user.id,
+    channelId: args[0].body.channel.id,
   }),
   ERROR_MESSAGES.RELEASE_ASSIGNMENT
 );
@@ -428,12 +442,11 @@ export const handleCompleteResponse = withErrorHandling(
       channel: question.userId,
       text: `<@${mentorId}>があなたの質問への対応を完了しました。ありがとうございました！`,
     });
-
   },
-  (args) => ({ 
-    client: args[0].client, 
-    userId: args[0].body.user.id, 
-    channelId: args[0].body.channel.id 
+  (args) => ({
+    client: args[0].client,
+    userId: args[0].body.user.id,
+    channelId: args[0].body.channel.id,
   }),
   ERROR_MESSAGES.COMPLETE_RESPONSE
 );
@@ -522,12 +535,11 @@ export const handleMarkResolvedByUser = withErrorHandling(
         text: `🎉 <@${userId}>が質問を解決済みとしてマークしました。お疲れ様でした！`,
       });
     }
-
   },
-  (args) => ({ 
-    client: args[0].client, 
-    userId: args[0].body.user.id, 
-    channelId: args[0].body.channel.id 
+  (args) => ({
+    client: args[0].client,
+    userId: args[0].body.user.id,
+    channelId: args[0].body.channel.id,
   }),
   ERROR_MESSAGES.MARK_RESOLVED_BY_USER
 );

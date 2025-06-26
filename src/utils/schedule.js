@@ -1,4 +1,3 @@
-
 export const createStatusModal = () => {
   return {
     type: 'modal',
@@ -82,4 +81,3 @@ export const formatMentorStatus = (mentors) => {
 
   return message;
 };
-

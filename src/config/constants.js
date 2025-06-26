@@ -13,7 +13,7 @@ export const URGENCY_LEVELS = {
 
 export const CATEGORIES = {
   FRONTEND: 'フロントエンド',
-  BACKEND: 'バックエンド', 
+  BACKEND: 'バックエンド',
   INFRASTRUCTURE: 'インフラ・デプロイ',
   LAYOUT_CSS: 'レイアウト・CSS',
   UI_UX: 'UI・UX相談',
@@ -42,10 +42,8 @@ export const STATUS_EMOJI = {
   [QUESTION_STATUS.COMPLETED]: '✅',
 };
 
-
 export const MENTOR_AVAILABILITY = {
   AVAILABLE: 'available',
   BUSY: 'busy',
   OFFLINE: 'offline',
 };
-
