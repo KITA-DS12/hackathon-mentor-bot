@@ -14,7 +14,24 @@ export const handleStartResponse = withErrorHandling(
   async ({ ack, body, client }) => {
     await ack();
 
-    const questionId = body.actions[0].value;
+    // アクションのvalueから情報を取得（新形式対応）
+    let questionId, sourceChannelId, messageTs;
+    try {
+      const actionValue = body.actions[0].value;
+      if (actionValue.startsWith('{')) {
+        // 新形式: JSON形式のvalue
+        const parsed = JSON.parse(actionValue);
+        questionId = parsed.questionId;
+        sourceChannelId = parsed.sourceChannelId;
+        messageTs = parsed.messageTs;
+      } else {
+        // 旧形式: questionIdのみ
+        questionId = actionValue;
+      }
+    } catch (error) {
+      questionId = body.actions[0].value; // フォールバック
+    }
+
     const mentorId = body.user.id;
 
     // 既に他のメンターが対応開始していないかチェック
@@ -49,14 +66,27 @@ export const handleStartResponse = withErrorHandling(
       mentorId
     );
 
-    // スレッドを作成
+    // 元のチャンネルでスレッドを作成
+    const targetChannelId = sourceChannelId || question.sourceChannelId;
+    const targetMessageTs = messageTs || question.messageTs;
+    
+    if (!targetChannelId || !targetMessageTs) {
+      await client.chat.postEphemeral({
+        channel: body.channel.id,
+        user: body.user.id,
+        text: '元の質問チャンネル情報が見つかりません。',
+      });
+      return;
+    }
+
     const threadMessage = createThreadInviteMessage(
       questionId,
       question.content
     );
+    
     const threadResult = await client.chat.postMessage({
-      channel: body.channel.id,
-      thread_ts: body.message.ts,
+      channel: targetChannelId,
+      thread_ts: targetMessageTs,
       ...threadMessage,
     });
 
@@ -65,7 +95,7 @@ export const handleStartResponse = withErrorHandling(
       threadTs: threadResult.ts,
     });
 
-    // メンターチャンネルのスレッドでステータス更新を通知
+    // メンターチャンネルでステータス更新を通知
     const statusMessage = createStatusUpdateMessage(
       { ...question, status: QUESTION_STATUS.IN_PROGRESS },
       questionId,
@@ -81,7 +111,7 @@ export const handleStartResponse = withErrorHandling(
     // 質問者にDMで通知
     await client.chat.postMessage({
       channel: question.userId,
-      text: `<@${mentorId}>があなたの質問に対応を開始しました。メンターチャンネルのスレッドをご確認ください。`,
+      text: `<@${mentorId}>があなたの質問に対応を開始しました。<#${targetChannelId}>のスレッドをご確認ください。`,
     });
 
   },

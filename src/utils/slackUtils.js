@@ -117,39 +117,126 @@ export const updateMessage = async (client, channelId, timestamp, text, blocks =
 };
 
 /**
- * 複数のメンターにDMで質問通知を送信
+ * メンターチャンネルに質問通知を送信
  * @param {Object} client - Slackクライアント
- * @param {Array} mentorIds - メンターIDの配列
  * @param {Object} questionData - 質問データ
  * @param {string} questionId - 質問ID
+ * @param {string} questionMessageTs - 元質問のタイムスタンプ
+ * @param {string} mentionText - メンション文
  */
-export const notifyMentorsDirectly = async (client, mentorIds, questionData, questionId) => {
-  const promises = mentorIds.map(async (mentorId) => {
-    try {
-      const notificationText = `
-🔔 **新しい質問が投稿されました**
+export const notifyMentorChannel = async (client, questionData, questionId, questionMessageTs, mentionText) => {
+  try {
+    const notificationBlocks = [
+      {
+        type: 'header',
+        text: {
+          type: 'plain_text',
+          text: `🔔 新しい質問 - ${questionData.category}`,
+        },
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `${mentionText}\n\n**チーム**: ${questionData.teamName}\n**チャンネル**: <#${questionData.sourceChannelId}>\n**緊急度**: ${questionData.urgency}\n**相談方法**: ${questionData.consultationType}`,
+        },
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `**質問内容**:\n${questionData.content}`,
+        },
+      }
+    ];
 
-**チーム**: ${questionData.teamName}
-**カテゴリ**: ${questionData.category}
-**緊急度**: ${questionData.urgency}
-**質問内容**: ${questionData.content.substring(0, 100)}...
-
-**チャンネル**: <#${questionData.sourceChannelId}>
-**質問ID**: ${questionId}
-
-詳細は該当チャンネルでご確認ください。`;
-
-      return await sendUserConfirmation(client, mentorId, notificationText);
-    } catch (error) {
-      console.error(`Failed to notify mentor ${mentorId}:`, error);
-      return null;
+    // 任意項目を追加
+    if (questionData.currentSituation) {
+      notificationBlocks.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `**現在の状況**:\n${questionData.currentSituation}`,
+        },
+      });
     }
-  });
 
-  const results = await Promise.allSettled(promises);
-  const succeeded = results.filter(result => result.status === 'fulfilled').length;
-  const failed = results.filter(result => result.status === 'rejected').length;
-  
-  console.log(`Mentor notifications: ${succeeded} succeeded, ${failed} failed`);
-  return { succeeded, failed };
+    if (questionData.relatedLinks) {
+      notificationBlocks.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `**関連リンク**:\n${questionData.relatedLinks}`,
+        },
+      });
+    }
+
+    if (questionData.errorMessage) {
+      notificationBlocks.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `**エラーメッセージ**:\n\`\`\`${questionData.errorMessage}\`\`\``,
+        },
+      });
+    }
+
+    // アクションボタンを追加
+    notificationBlocks.push({
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: '対応開始',
+          },
+          style: 'primary',
+          action_id: 'start_response',
+          value: JSON.stringify({
+            questionId,
+            sourceChannelId: questionData.sourceChannelId,
+            messageTs: questionMessageTs
+          }),
+        },
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: '詳細確認',
+          },
+          action_id: 'check_details',
+          value: questionId,
+        },
+        {
+          type: 'button',
+          text: {
+            type: 'plain_text',
+            text: '質問を見る',
+          },
+          url: `https://slack.com/app_redirect?channel=${questionData.sourceChannelId}&message_ts=${questionMessageTs}`,
+          action_id: 'view_question'
+        }
+      ],
+    });
+
+    notificationBlocks.push({
+      type: 'context',
+      elements: [
+        {
+          type: 'mrkdwn',
+          text: `質問ID: ${questionId} | 投稿チャンネル: <#${questionData.sourceChannelId}>`,
+        },
+      ],
+    });
+
+    return await client.chat.postMessage({
+      channel: config.app.mentorChannelId,
+      text: `🔔 新しい質問: ${questionData.teamName} - ${questionData.category}`,
+      blocks: notificationBlocks,
+    });
+  } catch (error) {
+    console.error('Failed to notify mentor channel:', error);
+    throw error;
+  }
 };

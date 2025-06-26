@@ -6,7 +6,7 @@ import { CONSULTATION_TYPES } from '../config/constants.js';
 import { config } from '../config/index.js';
 import { extractQuestionData, extractReservationData, isReservationConsultation } from '../utils/questionUtils.js';
 import { generateMentionText } from '../utils/mentorUtils.js';
-import { postQuestionToChannel, sendUserConfirmation, openModal } from '../utils/slackUtils.js';
+import { postQuestionToChannel, sendUserConfirmation, openModal, notifyMentorChannel } from '../utils/slackUtils.js';
 import { withErrorHandling, ERROR_MESSAGES } from '../utils/errorHandler.js';
 import { HealthCheckService } from '../utils/healthCheck.js';
 
@@ -45,8 +45,13 @@ const processImmediateConsultation = async (client, questionData) => {
     
     console.log('Posting question to source channel immediately...');
     const targetChannelId = questionData.sourceChannelId || config.app.mentorChannelId; // フォールバック
-    await postQuestionToChannel(client, targetChannelId, questionMessage, mentionText);
+    const questionResult = await postQuestionToChannel(client, targetChannelId, questionMessage, mentionText);
     console.log('✅ Question posted to channel successfully with temp ID:', tempId, 'in channel:', targetChannelId);
+    
+    // メンターチャンネルに通知を送信
+    console.log('Sending notification to mentor channel...');
+    await notifyMentorChannel(client, questionData, tempId, questionResult.ts, mentionText);
+    console.log('✅ Mentor channel notification sent');
     
     // 質問者にDMで確認
     console.log('Sending confirmation to user...');
@@ -58,7 +63,7 @@ const processImmediateConsultation = async (client, questionData) => {
     console.log('Confirmation sent to user');
     
     // 🚀 STEP 2: 背景でFirestore処理（非同期）
-    processFirestoreInBackground(questionData, tempId, client).catch(error => {
+    processFirestoreInBackground(questionData, tempId, questionResult.ts, client).catch(error => {
       console.error('Background Firestore processing failed:', error);
       // 失敗時は質問者にDM通知
       sendUserConfirmation(
@@ -78,13 +83,17 @@ const processImmediateConsultation = async (client, questionData) => {
 };
 
 // 背景Firestore処理
-const processFirestoreInBackground = async (questionData, tempId, client) => {
+const processFirestoreInBackground = async (questionData, tempId, questionMessageTs, client) => {
   console.log('Starting background Firestore processing...');
   
   try {
-    // Firestoreに質問を保存
+    // Firestoreに質問を保存（タイムスタンプを追加）
     console.log('Creating question in Firestore...');
-    const realQuestionId = await firestoreService.createQuestion(questionData);
+    const questionDataWithTs = {
+      ...questionData,
+      messageTs: questionMessageTs, // 元質問のタイムスタンプを追加
+    };
+    const realQuestionId = await firestoreService.createQuestion(questionDataWithTs);
     console.log('✅ Question created in Firestore with real ID:', realQuestionId);
     
     // 一時IDから実IDへのマッピングを記録（オプション）
