@@ -4,22 +4,38 @@ import { RetryUtils } from '../utils/retryUtils.js';
 
 export { FieldValue };
 
+// Firestoreインスタンスをグローバルで共有（シングルトン）
+let firestoreInstance = null;
+
 export class FirestoreService {
   constructor() {
-    this.db = new Firestore({
-      projectId: config.google.projectId,
-    });
+    if (!firestoreInstance) {
+      console.log(`[${Date.now()}] Creating new Firestore instance with project: ${config.google.projectId}`);
+      firestoreInstance = new Firestore({
+        projectId: config.google.projectId,
+      });
+      console.log(`[${Date.now()}] Firestore instance created`);
+    } else {
+      console.log(`[${Date.now()}] Reusing existing Firestore instance`);
+    }
+    this.db = firestoreInstance;
   }
 
   async createQuestion(questionData) {
-    return RetryUtils.retryFirestoreOperation(async () => {
+    // 一時的にリトライを無効化してパフォーマンス問題を調査
+    try {
+      console.log(`[${Date.now()}] Firestore: Starting to save question...`);
       const docRef = await this.db.collection('questions').add({
         ...questionData,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+      console.log(`[${Date.now()}] Firestore: Question saved successfully with ID: ${docRef.id}`);
       return docRef.id;
-    });
+    } catch (error) {
+      console.error(`[${Date.now()}] Firestore: Failed to save question:`, error);
+      throw error;
+    }
   }
 
   async getQuestion(questionId) {
@@ -36,7 +52,8 @@ export class FirestoreService {
   }
 
   async updateQuestion(questionId, updateData) {
-    return RetryUtils.retryFirestoreOperation(async () => {
+    // 一時的にリトライを無効化
+    try {
       await this.db
         .collection('questions')
         .doc(questionId)
@@ -44,7 +61,10 @@ export class FirestoreService {
           ...updateData,
           updatedAt: new Date(),
         });
-    });
+    } catch (error) {
+      console.error(`[${Date.now()}] Firestore: Failed to update question ${questionId}:`, error);
+      throw error;
+    }
   }
 
   async addStatusHistory(questionId, status, userId) {
