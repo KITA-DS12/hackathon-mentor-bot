@@ -44,12 +44,12 @@ export const handleCategorySelectionSubmission = async ({
     console.log('Debug: Creating template modal for category:', selectedCategory);
 
     // テンプレート質問フォームを表示
-    await client.views.update({
-      view_id: body.view.id,
+    await client.views.push({
+      trigger_id: body.trigger_id,
       view: modal,
     });
 
-    console.log('Debug: Modal updated successfully');
+    console.log('Debug: Modal pushed successfully');
   } catch (error) {
     console.error('Error handling category selection:', error);
 
