@@ -16,35 +16,36 @@ const firestoreService = new FirestoreService();
  * 質問処理（同期的にFirestoreに保存してから投稿）
  */
 const processQuestionSubmission = async (client, questionData) => {
+  const startTime = Date.now();
   try {
     console.log(
-      'Processing question submission for user:',
+      `[${Date.now()}] Processing question submission for user:`,
       questionData.userId
     );
 
     // 🚀 STEP 1: Firestoreに質問を保存
-    console.log('Saving question to Firestore...');
+    console.log(`[${Date.now()}] Saving question to Firestore...`);
+    const firestoreStart = Date.now();
     const questionId = await firestoreService.createQuestion(questionData);
-    console.log('✅ Question saved to Firestore with ID:', questionId);
+    console.log(`[${Date.now()}] ✅ Question saved to Firestore with ID: ${questionId} (${Date.now() - firestoreStart}ms)`);
 
-    // 🚀 STEP 2: Slackに投稿
-    console.log('Creating question message...');
-    const questionMessage = createQuestionMessage(questionData, questionId);
+    // 🚀 STEP 2: 並列でメッセージ作成とメンション生成
+    console.log(`[${Date.now()}] Creating message and generating mentions in parallel...`);
+    const [questionMessage, mentionText] = await Promise.all([
+      Promise.resolve(createQuestionMessage(questionData, questionId)),
+      generateMentionText(questionData.category)
+    ]);
 
-    console.log('Generating mention text for category:', questionData.category);
-    const mentionText = await generateMentionText(questionData.category);
-
-    console.log('Posting question to source channel...');
+    console.log(`[${Date.now()}] Posting question to source channel...`);
     const targetChannelId =
       questionData.sourceChannelId || config.app.mentorChannelId;
-    console.log('Debug: sourceChannelId =', questionData.sourceChannelId);
-    console.log('Debug: mentorChannelId =', config.app.mentorChannelId);
-    console.log('Debug: targetChannelId =', targetChannelId);
+    console.log(`[${Date.now()}] Target channel: ${targetChannelId}`);
 
     let questionResult;
     let finalTargetChannelId = targetChannelId;
 
     try {
+      const postStart = Date.now();
       questionResult = await postQuestionToChannel(
         client,
         targetChannelId,
@@ -52,20 +53,16 @@ const processQuestionSubmission = async (client, questionData) => {
         mentionText
       );
       console.log(
-        '✅ Question posted to channel successfully with ID:',
-        questionId,
-        'in channel:',
-        targetChannelId
+        `[${Date.now()}] ✅ Question posted to channel successfully (${Date.now() - postStart}ms) - ID: ${questionId}, Channel: ${targetChannelId}`
       );
     } catch (error) {
       if (
         error.data?.error === 'channel_not_found' &&
         targetChannelId !== config.app.mentorChannelId
       ) {
-        console.log(
-          '❌ Failed to post to source channel, falling back to mentor channel...'
-        );
+        console.log(`[${Date.now()}] ❌ Failed to post to source channel, falling back to mentor channel...`);
         finalTargetChannelId = config.app.mentorChannelId;
+        const fallbackStart = Date.now();
         questionResult = await postQuestionToChannel(
           client,
           finalTargetChannelId,
@@ -73,48 +70,56 @@ const processQuestionSubmission = async (client, questionData) => {
           mentionText
         );
         console.log(
-          '✅ Question posted to mentor channel as fallback with ID:',
-          questionId
+          `[${Date.now()}] ✅ Question posted to mentor channel as fallback (${Date.now() - fallbackStart}ms) - ID: ${questionId}`
         );
       } else {
         throw error;
       }
     }
 
+    // 並列処理で高速化
+    const parallelTasks = [];
+
     // Firestoreの質問データにメッセージタイムスタンプを更新
-    await firestoreService.updateQuestion(questionId, {
-      messageTs: questionResult.ts,
-    });
+    parallelTasks.push(
+      firestoreService.updateQuestion(questionId, {
+        messageTs: questionResult.ts,
+      })
+    );
 
     // メンターチャンネルに投稿していない場合のみ通知を送信
     if (finalTargetChannelId !== config.app.mentorChannelId) {
-      console.log('Sending notification to mentor channel...');
-      await notifyMentorChannel(
-        client,
-        questionData,
-        questionId,
-        questionResult.ts,
-        mentionText
-      );
-      console.log('✅ Mentor channel notification sent');
-    } else {
-      console.log(
-        '✅ Question already posted to mentor channel, skipping duplicate notification'
+      console.log(`[${Date.now()}] Sending notification to mentor channel...`);
+      parallelTasks.push(
+        notifyMentorChannel(
+          client,
+          questionData,
+          questionId,
+          questionResult.ts,
+          mentionText
+        )
       );
     }
 
     // 質問者にDMで確認
-    console.log('Sending confirmation to user...');
-    await sendUserConfirmation(
-      client,
-      questionData.userId,
-      '質問を送信しました。メンターからの返答をお待ちください。'
+    console.log(`[${Date.now()}] Sending confirmation to user...`);
+    parallelTasks.push(
+      sendUserConfirmation(
+        client,
+        questionData.userId,
+        '質問を送信しました。メンターからの返答をお待ちください。'
+      )
     );
-    console.log('Confirmation sent to user');
 
+    // 並列実行
+    const parallelStart = Date.now();
+    await Promise.all(parallelTasks);
+    console.log(`[${Date.now()}] ✅ All parallel tasks completed (${Date.now() - parallelStart}ms)`);
+
+    console.log(`[${Date.now()}] 🎉 Question submission completed successfully! Total time: ${Date.now() - startTime}ms`);
     return questionId;
   } catch (error) {
-    console.error('Error in processQuestionSubmission:', error);
+    console.error(`[${Date.now()}] Error in processQuestionSubmission (after ${Date.now() - startTime}ms):`, error);
     throw error;
   }
 };

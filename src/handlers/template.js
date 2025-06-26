@@ -117,12 +117,20 @@ export const handleTemplateQuestionSubmission = async ({
       ],
     };
 
-    // Firestoreに質問を保存
-    const questionId = await firestoreService.createQuestion(questionRecord);
+    // パフォーマンス測定開始
+    const startTime = Date.now();
+    console.log(`[${Date.now()}] Starting template question processing...`);
 
-    // チームチャンネルに質問投稿
-    const questionMessage = createQuestionMessage(questionRecord, questionId);
-    const mentionText = await generateMentionText(questionRecord.category);
+    // Firestoreに質問を保存
+    const firestoreStart = Date.now();
+    const questionId = await firestoreService.createQuestion(questionRecord);
+    console.log(`[${Date.now()}] ✅ Template question saved to Firestore (${Date.now() - firestoreStart}ms) - ID: ${questionId}`);
+
+    // 並列でメッセージ作成とメンション生成
+    const [questionMessage, mentionText] = await Promise.all([
+      Promise.resolve(createQuestionMessage(questionRecord, questionId)),
+      generateMentionText(questionRecord.category)
+    ]);
 
     const targetChannelId =
       questionRecord.sourceChannelId || config.app.mentorChannelId;
@@ -157,27 +165,41 @@ export const handleTemplateQuestionSubmission = async ({
       }
     }
 
+    // 並列処理で高速化
+    const parallelTasks = [];
+
     // Firestoreの質問データにメッセージタイムスタンプを更新
-    await firestoreService.updateQuestion(questionId, {
-      messageTs: questionResult.ts,
-    });
+    parallelTasks.push(
+      firestoreService.updateQuestion(questionId, {
+        messageTs: questionResult.ts,
+      })
+    );
 
     // メンターチャンネルに投稿していない場合のみ通知を送信
     if (finalTargetChannelId !== config.app.mentorChannelId) {
-      await notifyMentorChannel(
-        client,
-        questionRecord,
-        questionId,
-        questionResult.ts,
-        mentionText
+      parallelTasks.push(
+        notifyMentorChannel(
+          client,
+          questionRecord,
+          questionId,
+          questionResult.ts,
+          mentionText
+        )
       );
     }
 
     // 質問者にDMで確認
-    await client.chat.postMessage({
-      channel: body.user.id,
-      text: '質問を送信しました。メンターからの返答をお待ちください。',
-    });
+    parallelTasks.push(
+      client.chat.postMessage({
+        channel: body.user.id,
+        text: '質問を送信しました。メンターからの返答をお待ちください。',
+      })
+    );
+
+    // 並列実行
+    const parallelStart = Date.now();
+    await Promise.all(parallelTasks);
+    console.log(`[${Date.now()}] ✅ Template question processing completed! Total time: ${Date.now() - startTime}ms`);
   } catch (error) {
     console.error('Error handling template question submission:', error);
 
