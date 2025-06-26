@@ -9,6 +9,7 @@ import {
   notifyMentorChannel,
 } from '../utils/slackUtils.js';
 import { withErrorHandling, ERROR_MESSAGES } from '../utils/errorHandler.js';
+import { generateTempQuestionId } from '../utils/tempIdGenerator.js';
 
 const firestoreService = new FirestoreService();
 
@@ -27,7 +28,7 @@ const processQuestionSubmission = async (client, questionData) => {
 
     // 🚀 STEP 1: まずSlackに投稿（ユーザー体験を優先）
     console.log(`[${Date.now()}] Creating message for immediate posting...`);
-    const tempQuestionId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const tempQuestionId = generateTempQuestionId();
     
     // 🚀 STEP 2: 並列でメッセージ作成とメンション生成
     console.log(`[${Date.now()}] Creating message and generating mentions in parallel...`);
@@ -53,7 +54,7 @@ const processQuestionSubmission = async (client, questionData) => {
         mentionText
       );
       console.log(
-        `[${Date.now()}] ✅ Question posted to channel successfully (${Date.now() - postStart}ms) - ID: ${questionId}, Channel: ${targetChannelId}`
+        `[${Date.now()}] ✅ Question posted to channel successfully (${Date.now() - postStart}ms) - ID: ${tempQuestionId}, Channel: ${targetChannelId}`
       );
     } catch (error) {
       if (
@@ -70,7 +71,7 @@ const processQuestionSubmission = async (client, questionData) => {
           mentionText
         );
         console.log(
-          `[${Date.now()}] ✅ Question posted to mentor channel as fallback (${Date.now() - fallbackStart}ms) - ID: ${questionId}`
+          `[${Date.now()}] ✅ Question posted to mentor channel as fallback (${Date.now() - fallbackStart}ms) - ID: ${tempQuestionId}`
         );
       } else {
         throw error;

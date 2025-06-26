@@ -11,6 +11,7 @@ import {
   notifyMentorChannel,
 } from '../utils/slackUtils.js';
 import { generateMentionText } from '../utils/mentorUtils.js';
+import { generateTempQuestionId } from '../utils/tempIdGenerator.js';
 
 const firestoreService = new FirestoreService();
 
@@ -124,59 +125,88 @@ export const handleTemplateQuestionSubmission = async ({
     const startTime = Date.now();
     console.log(`[${Date.now()}] Starting template question processing...`);
 
-    // Firestoreに質問を保存
-    const firestoreStart = Date.now();
-    const questionId = await firestoreService.createQuestion(questionRecord);
-    console.log(`[${Date.now()}] ✅ Template question saved to Firestore (${Date.now() - firestoreStart}ms) - ID: ${questionId}`);
-
-    // 並列でメッセージ作成とメンション生成
+    // 🚀 STEP 1: まずSlackに投稿（ユーザー体験を優先）
+    console.log(`[${Date.now()}] Creating message for immediate posting...`);
+    const tempQuestionId = generateTempQuestionId();
+    
+    // 🚀 STEP 2: 並列でメッセージ作成とメンション生成
+    console.log(`[${Date.now()}] Creating message and generating mentions in parallel...`);
     const [questionMessage, mentionText] = await Promise.all([
-      Promise.resolve(createQuestionMessage(questionRecord, questionId)),
+      Promise.resolve(createQuestionMessage(questionRecord, tempQuestionId)),
       generateMentionText(questionRecord.category)
     ]);
 
+    console.log(`[${Date.now()}] Posting template question to source channel...`);
     const targetChannelId =
       questionRecord.sourceChannelId || config.app.mentorChannelId;
+    console.log(`[${Date.now()}] Target channel: ${targetChannelId}`);
 
     let questionResult;
     let finalTargetChannelId = targetChannelId;
 
     try {
+      const postStart = Date.now();
       questionResult = await postQuestionToChannel(
         client,
         targetChannelId,
         questionMessage,
         mentionText
       );
+      console.log(
+        `[${Date.now()}] ✅ Template question posted to channel successfully (${Date.now() - postStart}ms) - ID: ${tempQuestionId}, Channel: ${targetChannelId}`
+      );
     } catch (error) {
       if (
         error.data?.error === 'channel_not_found' &&
         targetChannelId !== config.app.mentorChannelId
       ) {
-        console.log(
-          'Template: Failed to post to source channel, falling back to mentor channel...'
-        );
+        console.log(`[${Date.now()}] ❌ Failed to post to source channel, falling back to mentor channel...`);
         finalTargetChannelId = config.app.mentorChannelId;
+        const fallbackStart = Date.now();
         questionResult = await postQuestionToChannel(
           client,
           finalTargetChannelId,
           questionMessage,
           mentionText
         );
+        console.log(
+          `[${Date.now()}] ✅ Template question posted to mentor channel as fallback (${Date.now() - fallbackStart}ms) - ID: ${tempQuestionId}`
+        );
       } else {
         throw error;
       }
     }
 
+    // 🚀 STEP 3: Slackに投稿後、Firestoreに保存
+    console.log(`[${Date.now()}] Saving template question to Firestore after successful posting...`);
+    let questionId;
+    try {
+      questionId = await firestoreService.createQuestion({
+        ...questionRecord,
+        messageTs: questionResult.ts,
+      });
+      console.log(`[${Date.now()}] ✅ Template question saved to Firestore with ID: ${questionId}`);
+      
+      // Slack投稿のボタンIDを実IDに更新
+      const updatedMessage = createQuestionMessage(questionRecord, questionId);
+      try {
+        await client.chat.update({
+          channel: finalTargetChannelId,
+          ts: questionResult.ts,
+          ...updatedMessage,
+        });
+        console.log(`[${Date.now()}] ✅ Template message updated with real ID: ${questionId}`);
+      } catch (updateError) {
+        console.error(`[${Date.now()}] ❌ Failed to update template message with real ID:`, updateError);
+      }
+    } catch (firestoreError) {
+      console.error(`[${Date.now()}] ❌ Template Firestore save failed:`, firestoreError);
+      // Firestoreエラーでも処理を続行（Slackへの投稿は成功しているため）
+      questionId = tempQuestionId;
+    }
+
     // 並列処理で高速化
     const parallelTasks = [];
-
-    // Firestoreの質問データにメッセージタイムスタンプを更新
-    parallelTasks.push(
-      firestoreService.updateQuestion(questionId, {
-        messageTs: questionResult.ts,
-      })
-    );
 
     // メンターチャンネルに投稿していない場合のみ通知を送信
     if (finalTargetChannelId !== config.app.mentorChannelId) {

@@ -7,6 +7,7 @@ import {
 } from '../utils/message.js';
 import { QUESTION_STATUS } from '../config/constants.js';
 import { withErrorHandling, ERROR_MESSAGES } from '../utils/errorHandler.js';
+import { isTempQuestionId } from '../utils/tempIdGenerator.js';
 
 const firestoreService = new FirestoreService();
 
@@ -38,7 +39,7 @@ export const handleStartResponse = withErrorHandling(
     let question = await firestoreService.getQuestion(questionId);
     
     // 一時IDの場合、メッセージタイムスタンプで検索
-    if (!question && questionId.startsWith('temp_')) {
+    if (!question && isTempQuestionId(questionId)) {
       console.log(`Looking for question by message timestamp: ${body.message.ts}`);
       question = await firestoreService.getQuestionByMessageTs(body.channel.id, body.message.ts);
     }
@@ -483,7 +484,7 @@ export const handleMarkResolvedByUser = withErrorHandling(
     let question = await firestoreService.getQuestion(questionId);
     
     // 一時IDの場合、メッセージタイムスタンプで検索
-    if (!question && questionId.startsWith('temp_')) {
+    if (!question && isTempQuestionId(questionId)) {
       console.log(`Looking for question by message timestamp: ${body.message.ts}`);
       question = await firestoreService.getQuestionByMessageTs(body.channel.id, body.message.ts);
     }
