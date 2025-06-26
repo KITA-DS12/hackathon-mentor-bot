@@ -26,6 +26,9 @@ export const handleCategorySelectionSubmission = async ({
     const selectedCategory =
       values.category_selection.category.selected_option.value;
 
+    console.log('Debug: Selected category =', selectedCategory);
+    console.log('Debug: View ID =', body.view.id);
+
     // 前のモーダルからチャンネル情報を取得
     const metadata = body.view.private_metadata
       ? JSON.parse(body.view.private_metadata)
@@ -38,11 +41,15 @@ export const handleCategorySelectionSubmission = async ({
       category: selectedCategory,
     });
 
+    console.log('Debug: Creating template modal for category:', selectedCategory);
+
     // テンプレート質問フォームを表示
     await client.views.update({
       view_id: body.view.id,
       view: modal,
     });
+
+    console.log('Debug: Modal updated successfully');
   } catch (error) {
     console.error('Error handling category selection:', error);
 
