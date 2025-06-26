@@ -86,6 +86,19 @@ const processQuestionSubmission = async (client, questionData) => {
         messageTs: questionResult.ts,
       });
       console.log(`[${Date.now()}] ✅ Question saved to Firestore with ID: ${questionId}`);
+      
+      // Slack投稿のボタンIDを実IDに更新
+      const updatedMessage = createQuestionMessage(questionData, questionId);
+      try {
+        await client.chat.update({
+          channel: finalTargetChannelId,
+          ts: questionResult.ts,
+          ...updatedMessage,
+        });
+        console.log(`[${Date.now()}] ✅ Message updated with real ID: ${questionId}`);
+      } catch (updateError) {
+        console.error(`[${Date.now()}] ❌ Failed to update message with real ID:`, updateError);
+      }
     } catch (firestoreError) {
       console.error(`[${Date.now()}] ❌ Firestore save failed:`, firestoreError);
       // Firestoreエラーでも処理を続行（Slackへの投稿は成功しているため）

@@ -58,6 +58,29 @@ export class FirestoreService {
     }
   }
 
+  async getQuestionByMessageTs(channelId, messageTs) {
+    try {
+      console.log(`Searching for question with messageTs: ${messageTs} in channel: ${channelId}`);
+      const querySnapshot = await this.db.collection('questions')
+        .where('messageTs', '==', messageTs)
+        .where('sourceChannelId', '==', channelId)
+        .limit(1)
+        .get();
+      
+      if (querySnapshot.empty) {
+        console.log('No question found with messageTs');
+        return null;
+      }
+      
+      const doc = querySnapshot.docs[0];
+      console.log(`Found question by messageTs: ${doc.id}`);
+      return { id: doc.id, ...doc.data() };
+    } catch (error) {
+      console.error('Error getting question by messageTs:', error);
+      return null;
+    }
+  }
+
   async updateQuestion(questionId, updateData) {
     try {
       // タイムアウトを設定してFirestore操作を実行

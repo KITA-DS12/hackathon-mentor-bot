@@ -35,7 +35,14 @@ export const handleStartResponse = withErrorHandling(
     const mentorId = body.user.id;
 
     // 既に他のメンターが対応開始していないかチェック
-    const question = await firestoreService.getQuestion(questionId);
+    let question = await firestoreService.getQuestion(questionId);
+    
+    // 一時IDの場合、メッセージタイムスタンプで検索
+    if (!question && questionId.startsWith('temp_')) {
+      console.log(`Looking for question by message timestamp: ${body.message.ts}`);
+      question = await firestoreService.getQuestionByMessageTs(body.channel.id, body.message.ts);
+    }
+    
     if (!question) {
       await client.chat.postEphemeral({
         channel: body.channel.id,
@@ -473,7 +480,14 @@ export const handleMarkResolvedByUser = withErrorHandling(
     const questionId = body.actions[0].value;
     const userId = body.user.id;
 
-    const question = await firestoreService.getQuestion(questionId);
+    let question = await firestoreService.getQuestion(questionId);
+    
+    // 一時IDの場合、メッセージタイムスタンプで検索
+    if (!question && questionId.startsWith('temp_')) {
+      console.log(`Looking for question by message timestamp: ${body.message.ts}`);
+      question = await firestoreService.getQuestionByMessageTs(body.channel.id, body.message.ts);
+    }
+    
     if (!question) {
       await client.chat.postEphemeral({
         channel: body.channel.id,
