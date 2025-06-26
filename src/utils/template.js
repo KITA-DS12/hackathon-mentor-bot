@@ -4,7 +4,7 @@ import { URGENCY_LEVELS, CONSULTATION_TYPES } from '../config/constants.js';
 export const createCategorySelectionModal = () => {
   return {
     type: 'modal',
-    callback_id: 'template_question_modal',
+    callback_id: 'category_selection_modal',
     title: {
       type: 'plain_text',
       text: 'メンターに質問する',
